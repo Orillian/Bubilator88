@@ -68,6 +68,11 @@ struct GeneralSettingsTab: View {
           .settingsDescriptionStyle()
         if settings.automationEnabled {
           TextField("Port", value: $settings.automationPort, format: .number.grouping(.never))
+          if !Settings.automationPortRange.contains(settings.automationPort) {
+            Text("Choose a port from 1024 to 65535.")
+              .font(.subheadline)
+              .foregroundStyle(.red)
+          }
           Button("Copy Command for Claude Code") { viewModel.copyAutomationSetupCommand() }
         }
       }

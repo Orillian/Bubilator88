@@ -235,12 +235,13 @@ final class Settings {
     didSet { UserDefaults.standard.set(automationPort, forKey: Keys.automationPort) }
   }
 
-  /// The bearer token AI agents send with every request. Made once, at the
-  /// first launch that needs it; it keeps web pages, which cannot learn it,
+  /// The bearer token AI agents send with every request. Made and saved by
+  /// `init` on the first launch; it keeps web pages, which cannot learn it,
   /// from reaching the server.
-  private(set) var automationToken: String = "" {
-    didSet { UserDefaults.standard.set(automationToken, forKey: Keys.automationToken) }
-  }
+  private(set) var automationToken: String = ""
+
+  /// Ports the AI tools server may listen on: the unprivileged ones.
+  static let automationPortRange = 1024...65535
 
   /// When the release feed was last fetched by the launch check.
   var lastUpdateCheck: Date? {
@@ -718,8 +719,7 @@ final class Settings {
     if let v = UserDefaults.standard.string(forKey: Keys.automationToken), !v.isEmpty {
       automationToken = v
     } else {
-      // Two UUIDs' worth of randomness, without the dashes. Saved by hand:
-      // `didSet` does not run inside `init`.
+      // Two UUIDs' worth of randomness, without the dashes.
       automationToken = (UUID().uuidString + UUID().uuidString).replacingOccurrences(of: "-", with: "").lowercased()
       UserDefaults.standard.set(automationToken, forKey: Keys.automationToken)
     }

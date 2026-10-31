@@ -1394,7 +1394,9 @@ final class EmulatorViewModel {
   /// values, so the UI label and the actual ROM-visible mode can never
   /// drift — even if Settings.dipSw1/dipSw2Base were left stale by a
   /// previous save-state load or another unusual path.
-  func performReset(resetTranslation: Bool, forceRestart: Bool = false) {
+  ///
+  /// `clock8MHz` overrides the clock setting for this reset only.
+  func performReset(resetTranslation: Bool, forceRestart: Bool = false, clock8MHz clockOverride: Bool? = nil) {
     let wasRunning = isRunning || forceRestart
     cancelScriptPlayback()
     cancelScriptRecording()
@@ -1410,7 +1412,7 @@ final class EmulatorViewModel {
       if Settings.shared.dipSw1 != sw1 { Settings.shared.dipSw1 = sw1 }
       if Settings.shared.dipSw2Base != sw2Base { Settings.shared.dipSw2Base = sw2Base }
     }
-    let use8MHz = clock8MHz
+    let use8MHz = clockOverride ?? clock8MHz
     let monitorType = Settings.shared.monitorType
     let memoryWaitDip = Settings.shared.memoryWaitDip
     refreshCDBios()

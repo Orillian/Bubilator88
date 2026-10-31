@@ -99,19 +99,8 @@ extension EmulatorViewModel {
       return
     }
     for _ in 0..<frameCount {
-      tickPasteQueue()
-      tickTapeAutoBoot()
-      tickMemoryImageBoot()
-      tickClickZonePlayer()
-      tickScriptPlayer()
-      applyCheats()
-      // Finishes a frame the sliced path left part-way (switching to fast
-      // forward mid-frame): runFrame() stops at the same boundary.
-      pc88.runFrame()
-      // Advance the recording clock in lockstep with machine frames.
-      if let r = scriptRecorder { r.frameIndex += 1 }
+      runHostFrame()
     }
-    frameSliceIndex = 0
 
     // Drain audio immediately after emulation, before the potentially
     // expensive pixel rendering step, to minimize ring buffer underruns.
@@ -131,12 +120,7 @@ extension EmulatorViewModel {
   nonisolated func runFrameSliceForMetal() {
     if frameSliceIndex == 0 {
       applyPendingInput()
-      tickPasteQueue()
-      tickTapeAutoBoot()
-      tickMemoryImageBoot()
-      tickClickZonePlayer()
-      tickScriptPlayer()
-      applyCheats()
+      beginHostFrame()
     }
     let ended = pc88.runFrameSlice(frameSliceIndex, of: Self.audioSlicesPerFrame)
     audio.drainSamples()
@@ -145,8 +129,37 @@ extension EmulatorViewModel {
       return
     }
     frameSliceIndex = 0
-    if let r = scriptRecorder { r.frameIndex += 1 }
+    endHostFrame()
     finishFrame()
+  }
+
+  /// Run one whole machine frame with the host's per-frame work around it.
+  /// Under `emuQueue`, like `runFrameForMetal`.
+  nonisolated func runHostFrame() {
+    beginHostFrame()
+    // Finishes a frame the sliced path left part-way (switching to fast
+    // forward mid-frame, or an AI agent running frames after a pause):
+    // runFrame() stops at the same boundary.
+    pc88.runFrame()
+    frameSliceIndex = 0
+    endHostFrame()
+  }
+
+  /// The host work that runs before each machine frame: paste, auto-boot,
+  /// script playback and cheats.
+  nonisolated func beginHostFrame() {
+    tickPasteQueue()
+    tickTapeAutoBoot()
+    tickMemoryImageBoot()
+    tickClickZonePlayer()
+    tickScriptPlayer()
+    applyCheats()
+  }
+
+  /// The host work that runs after each machine frame.
+  nonisolated func endHostFrame() {
+    // Advance the recording clock in lockstep with machine frames.
+    if let r = scriptRecorder { r.frameIndex += 1 }
   }
 
   /// The frame-end half of a loop tick: debugger check, render, publish,

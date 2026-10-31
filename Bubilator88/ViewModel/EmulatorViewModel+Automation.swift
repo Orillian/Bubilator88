@@ -8,12 +8,24 @@ import Foundation
 extension EmulatorViewModel {
 
   /// Start or stop the AI tools server to match Settings.
+  ///
+  /// Each server is a new session: the previous agent's hold on the debugger
+  /// goes with it, and the new listener waits for the old one to let go of
+  /// the port.
   func applyAutomationSetting() {
-    automationServer?.stop()
+    let previous = automationServer
     automationServer = nil
+    if automationNeedsDebugger {
+      automationNeedsDebugger = false
+      updateDebuggerAttachment()
+    }
     let settings = Settings.shared
     guard settings.automationEnabled,
-          let port = UInt16(exactly: settings.automationPort), port >= 1024 else { return }
+          Settings.automationPortRange.contains(settings.automationPort),
+          let port = UInt16(exactly: settings.automationPort) else {
+      previous?.stop()
+      return
+    }
     let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
     let handler = MCPHandler(tools: AutomationTools(host: AppAutomationHost(viewModel: self)),
                              serverVersion: version)
@@ -21,8 +33,12 @@ extension EmulatorViewModel {
     server.onFailure = { [weak self] message in
       self?.showAlert(title: String(localized: "AI Control Unavailable", comment: ""), message: message)
     }
-    server.start()
     automationServer = server
+    if let previous {
+      previous.stop { server.start() }
+    } else {
+      server.start()
+    }
   }
 
   /// The command that registers this app with Claude Code.
@@ -78,18 +94,23 @@ nonisolated final class AppAutomationHost: AutomationHost, @unchecked Sendable {
       if viewModel.isRunning { viewModel.pause() }
       return viewModel
     }
-    let frames = emuQueue.sync { () -> Int in
-      var run = 0
-      while run < count, beforeEach(pc88) {
-        viewModel.applyCheats()
-        pc88.runFrame()
+    // One frame per turn on the queue, so the user's menu actions, which
+    // wait for it, are not held up for the whole run.
+    var frames = 0
+    while frames < count {
+      let ran = emuQueue.sync { () -> Bool in
+        // The user resumed real time: leave the machine to it.
+        guard !viewModel.emulationLoop.shouldRun, beforeEach(pc88) else { return false }
+        viewModel.applyPendingInput()
+        viewModel.runHostFrame()
         // Nothing plays while paused; drop the sound rather than let it
         // burst out when real time resumes.
         _ = pc88.takeAudioSamples()
-        run += 1
-        if debugger.isPaused { break }
+        return true
       }
-      return run
+      guard ran else { break }
+      frames += 1
+      if debugger.isPaused { break }
     }
     try onMain { $0.renderSingleFrame() }
     return frames
@@ -113,10 +134,10 @@ nonisolated final class AppAutomationHost: AutomationHost, @unchecked Sendable {
   }
 
   /// The app has one reset, the front-panel RESET with the DIP switches
-  /// applied; `cold` makes no difference here.
+  /// applied; `cold` makes no difference here. A clock given here lasts
+  /// until the user's next reset, leaving their setting alone.
   func reset(cold: Bool, mode: BootMode?, clock8MHz: Bool?) throws {
     try onMain { viewModel in
-      if let clock8MHz { Settings.shared.clock8MHz = clock8MHz }
       if let mode {
         viewModel._bootModeStorage = switch mode {
         case .n88v2: .n88v2
@@ -125,7 +146,7 @@ nonisolated final class AppAutomationHost: AutomationHost, @unchecked Sendable {
         case .nbasic: .n
         }
       }
-      viewModel.performReset(resetTranslation: true)
+      viewModel.performReset(resetTranslation: true, clock8MHz: clock8MHz)
     }
   }
 

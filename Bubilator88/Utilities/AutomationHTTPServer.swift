@@ -21,6 +21,9 @@ nonisolated final class AutomationHTTPServer: @unchecked Sendable {
   private let handle: (Data) -> Data?
   private let queue = DispatchQueue(label: "com.bubio.bubilator88.automation")
   private var listener: NWListener?
+  /// Open connections, closed by `stop()`; touched only on `queue`.
+  private var connections: [ObjectIdentifier: NWConnection] = [:]
+  private var stopped = false
 
   /// Called on the main queue when the server cannot listen.
   var onFailure: (@MainActor @Sendable (String) -> Void)?
@@ -36,6 +39,7 @@ nonisolated final class AutomationHTTPServer: @unchecked Sendable {
 
   func start() {
     queue.async { [self] in
+      guard !stopped else { return }
       let parameters = NWParameters.tcp
       parameters.acceptLocalOnly = true
       parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: NWEndpoint.Port(rawValue: port)!)
@@ -47,13 +51,21 @@ nonisolated final class AutomationHTTPServer: @unchecked Sendable {
         return
       }
       listener.stateUpdateHandler = { [weak self] state in
-        if case .failed(let error) = state {
-          self?.report("Cannot listen on port \(self?.port ?? 0): \(error.localizedDescription)")
-          self?.listener?.cancel()
-        }
+        guard let self, case .failed(let error) = state else { return }
+        report("Cannot listen on port \(port): \(error.localizedDescription)")
+        self.listener?.cancel()
+        self.listener = nil
       }
       listener.newConnectionHandler = { [weak self] connection in
         guard let self else { return }
+        let id = ObjectIdentifier(connection)
+        connections[id] = connection
+        connection.stateUpdateHandler = { [weak self] state in
+          switch state {
+          case .failed, .cancelled: self?.connections[id] = nil
+          default: break
+          }
+        }
         connection.start(queue: queue)
         receive(on: connection, buffer: Data())
       }
@@ -63,10 +75,23 @@ nonisolated final class AutomationHTTPServer: @unchecked Sendable {
     }
   }
 
-  func stop() {
+  /// Close the listener and every open connection. `then` runs on the
+  /// server's queue once the port is free, so a server started from it can
+  /// take the same port.
+  func stop(then: (() -> Void)? = nil) {
     queue.async { [self] in
-      listener?.cancel()
-      listener = nil
+      stopped = true
+      for connection in connections.values { connection.cancel() }
+      connections.removeAll()
+      guard let listener else {
+        then?()
+        return
+      }
+      self.listener = nil
+      listener.stateUpdateHandler = { state in
+        if case .cancelled = state { then?() }
+      }
+      listener.cancel()
     }
   }
 
@@ -85,25 +110,30 @@ nonisolated final class AutomationHTTPServer: @unchecked Sendable {
     var body: Data
   }
 
-  /// Read until one whole request is buffered, answer it, and go round again
-  /// for the next one on the same connection.
+  /// Read more of the connection into `buffer` and serve what it holds.
   private func receive(on connection: NWConnection, buffer: Data) {
     connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { [weak self] data, _, isComplete, error in
-      guard let self else { return }
       var buffer = buffer
       if let data { buffer.append(data) }
-      switch parse(&buffer) {
-      case .request(let request):
-        respond(to: request, on: connection) { [weak self] in
-          self?.receive(on: connection, buffer: buffer)
-        }
-      case .incomplete where error == nil && !isComplete:
-        receive(on: connection, buffer: buffer)
-      case .incomplete:
-        connection.cancel()
-      case .invalid(let status):
-        send(status: status, body: nil, on: connection, close: true)
+      self?.serve(on: connection, buffer: buffer, ended: isComplete || error != nil)
+    }
+  }
+
+  /// Answer the requests in `buffer` one at a time, then read for more
+  /// unless the client has finished sending.
+  private func serve(on connection: NWConnection, buffer: Data, ended: Bool) {
+    var buffer = buffer
+    switch parse(&buffer) {
+    case .request(let request):
+      respond(to: request, on: connection) { [weak self] in
+        self?.serve(on: connection, buffer: buffer, ended: ended)
       }
+    case .incomplete where !ended:
+      receive(on: connection, buffer: buffer)
+    case .incomplete:
+      connection.cancel()
+    case .invalid(let status):
+      send(status: status, body: nil, on: connection, close: true)
     }
   }
 

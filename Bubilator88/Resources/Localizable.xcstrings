@@ -84,6 +84,17 @@
         }
       }
     },
+    "Choose a port from 1024 to 65535." : {
+      "comment" : "Settings warning under the AI tools port field: the number is out of range",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1024〜65535 のポート番号を指定してください。"
+          }
+        }
+      }
+    },
     "Copied" : {
       "comment" : "Toast after copying the Claude Code setup command",
       "localizations" : {
