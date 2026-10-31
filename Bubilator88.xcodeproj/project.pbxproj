@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		B616EC4B2F550F2200D819FE /* Bubilator88Core in Frameworks */ = {isa = PBXBuildFile; productRef = B6AA00022F4BF001002BAE55 /* Bubilator88Core */; };
+		B6C3000000000000000000F1 /* Bubilator88Automation in Frameworks */ = {isa = PBXBuildFile; productRef = B6C3000000000000000000F0 /* Bubilator88Automation */; };
 		B6C1000000000000000000ED /* Bubilator88QuickLook.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B6C1000000000000000000E2 /* Bubilator88QuickLook.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B6C1000000000000000000F1 /* Bubilator88Core in Frameworks */ = {isa = PBXBuildFile; productRef = B6C1000000000000000000F0 /* Bubilator88Core */; };
 		B6C2000000000000000000ED /* Bubilator88QuickLookPreview.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B6C2000000000000000000E2 /* Bubilator88QuickLookPreview.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -141,6 +142,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B616EC4B2F550F2200D819FE /* Bubilator88Core in Frameworks */,
+				B6C3000000000000000000F1 /* Bubilator88Automation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -230,6 +232,7 @@
 			name = Bubilator88;
 			packageProductDependencies = (
 				B6AA00022F4BF001002BAE55 /* Bubilator88Core */,
+				B6C3000000000000000000F0 /* Bubilator88Automation */,
 			);
 			productName = Bubilator88;
 			productReference = B62EED682F4BE8160011A29B /* Bubilator88.app */;
@@ -974,6 +977,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B6AA00012F4BF000002BAE55 /* XCRemoteSwiftPackageReference "Bubilator88Core" */;
 			productName = Bubilator88Core;
+		};
+		B6C3000000000000000000F0 /* Bubilator88Automation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B6AA00012F4BF000002BAE55 /* XCRemoteSwiftPackageReference "Bubilator88Core" */;
+			productName = Bubilator88Automation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

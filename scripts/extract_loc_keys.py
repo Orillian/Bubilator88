@@ -38,19 +38,20 @@ def derived_data_dir() -> Path | None:
 
     There is one directory per configuration and architecture, and one
     DerivedData folder each for the bare project (`Bubilator88-*`) and the
-    development workspace (`Bubilator88Dev-*`). Pick whichever holds the most
+    development workspace (`Bubilator88Dev-*`), or `build/` in the repository
+    when the workspace is set to build there. Pick whichever holds the most
     recently written .stringsdata — sorting by name would prefer Release over
     Debug and happily read a stale build.
     """
-    candidates = [
-        d
+    objects = "Bubilator88.build/*/Bubilator88.build/Objects-normal/*"
+    roots = [
+        root
         for pattern in ("Bubilator88-*", "Bubilator88Dev-*")
-        for d in Path.home().glob(
-            f"Library/Developer/Xcode/DerivedData/{pattern}/Build/Intermediates.noindex"
-            "/Bubilator88.build/*/Bubilator88.build/Objects-normal/*"
-        )
-        if any(d.glob("*.stringsdata"))
+        for root in Path.home().glob(f"Library/Developer/Xcode/DerivedData/{pattern}/Build/Intermediates.noindex")
     ]
+    # A workspace whose settings put derived data next to it builds into `build/`.
+    roots.append(Path(__file__).resolve().parent.parent / "build/Intermediates.noindex")
+    candidates = [d for root in roots for d in root.glob(objects) if any(d.glob("*.stringsdata"))]
     if not candidates:
         return None
     return max(candidates, key=lambda d: max(f.stat().st_mtime for f in d.glob("*.stringsdata")))

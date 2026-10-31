@@ -63,6 +63,18 @@ struct GeneralSettingsTab: View {
       }
 
       Section {
+        Toggle("Allow control from AI tools", isOn: $settings.automationEnabled)
+        Text("When on, AI tools such as Claude Code can operate and inspect the emulator.")
+          .settingsDescriptionStyle()
+        if settings.automationEnabled {
+          TextField("Port", value: $settings.automationPort, format: .number.grouping(.never))
+          Button("Copy Command for Claude Code") { viewModel.copyAutomationSetupCommand() }
+        }
+      }
+      .onChange(of: settings.automationEnabled) { viewModel.applyAutomationSetting() }
+      .onChange(of: settings.automationPort) { viewModel.applyAutomationSetting() }
+
+      Section {
         Toggle("Check for updates at launch", isOn: $settings.automaticUpdateCheck)
       }
 
