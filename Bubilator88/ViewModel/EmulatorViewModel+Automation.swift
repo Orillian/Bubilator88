@@ -191,4 +191,24 @@ nonisolated final class AppAutomationHost: AutomationHost, @unchecked Sendable {
       try viewModel.applySaveState(Data(contentsOf: url), from: url)
     }
   }
+
+  func mountTape(url: URL) throws -> TapeFormat {
+    guard FileManager.default.isReadableFile(atPath: url.path) else {
+      throw AutomationError("Cannot read \(url.path).")
+    }
+    return try onMain { viewModel in
+      guard viewModel.mountTape(url: url), let format = viewModel.tapeFormat else {
+        throw AutomationError("Cannot load \(url.lastPathComponent) as a tape.")
+      }
+      return format
+    }
+  }
+
+  func rewindTape() throws {
+    try onMain { $0.rewindTape() }
+  }
+
+  func ejectTape() throws {
+    try onMain { $0.ejectTape() }
+  }
 }
