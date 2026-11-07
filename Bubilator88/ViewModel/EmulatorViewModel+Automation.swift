@@ -47,16 +47,41 @@ extension EmulatorViewModel {
     }
   }
 
-  /// The command that registers this app with Claude Code.
-  var automationSetupCommand: String {
-    let settings = Settings.shared
-    return "claude mcp add --transport http bubilator88 http://127.0.0.1:\(settings.automationPort)/mcp"
-      + " --header \"Authorization: Bearer \(settings.automationToken)\""
+  /// What an MCP client needs to connect, to copy from Settings.
+  enum AutomationConnectionItem {
+    /// The server's Streamable HTTP endpoint.
+    case url
+    /// The bearer token every request must carry.
+    case token
+    /// An `mcpServers` entry, the form most MCP clients' settings files take.
+    case configuration
   }
 
-  func copyAutomationSetupCommand() {
+  func automationConnection(_ item: AutomationConnectionItem) -> String {
+    let settings = Settings.shared
+    let url = "http://127.0.0.1:\(settings.automationPort)/mcp"
+    switch item {
+    case .url:
+      return url
+    case .token:
+      return settings.automationToken
+    case .configuration:
+      let entry: [String: Any] = [
+        "type": "http",
+        "url": url,
+        "headers": ["Authorization": "Bearer \(settings.automationToken)"],
+      ]
+      let options: JSONSerialization.WritingOptions = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+      guard let data = try? JSONSerialization.data(withJSONObject: ["mcpServers": ["bubilator88": entry]], options: options) else {
+        return ""
+      }
+      return String(decoding: data, as: UTF8.self)
+    }
+  }
+
+  func copyAutomationConnection(_ item: AutomationConnectionItem) {
     NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(automationSetupCommand, forType: .string)
+    NSPasteboard.general.setString(automationConnection(item), forType: .string)
     showToast(String(localized: "Copied", comment: ""))
   }
 }

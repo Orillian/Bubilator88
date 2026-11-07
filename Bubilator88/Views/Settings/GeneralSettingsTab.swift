@@ -64,7 +64,7 @@ struct GeneralSettingsTab: View {
 
       Section {
         Toggle("Allow control from AI tools", isOn: $settings.automationEnabled)
-        Text("When on, AI tools such as Claude Code can operate and inspect the emulator.")
+        Text("When on, AI tools that support MCP can operate and inspect the emulator.")
           .settingsDescriptionStyle()
         if settings.automationEnabled {
           TextField("Port", value: $settings.automationPort, format: .number.grouping(.never))
@@ -73,7 +73,11 @@ struct GeneralSettingsTab: View {
               .font(.subheadline)
               .foregroundStyle(.red)
           }
-          Button("Copy Command for Claude Code") { viewModel.copyAutomationSetupCommand() }
+          HStack {
+            Button("Copy URL") { viewModel.copyAutomationConnection(.url) }
+            Button("Copy Token") { viewModel.copyAutomationConnection(.token) }
+            Button("Copy Settings JSON") { viewModel.copyAutomationConnection(.configuration) }
+          }
         }
       }
       .onChange(of: settings.automationEnabled) { viewModel.applyAutomationSetting() }

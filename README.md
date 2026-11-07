@@ -87,6 +87,20 @@ Apple Vision OCR + Translation フレームワークを使い、画面上の日�
 
 エミュレータの画面テキストを macOS のクリップボードへコピー、またはクリップボードのテキストを擬似キー入力として流し込むことができます。半角カナを含む BASIC プログラムのリスト転記や、サンプルコードの貼り付けが手打ちなしで行えます。
 
+### AI ツールからの操作 (MCP)
+
+[Model Context Protocol](https://modelcontextprotocol.io) に対応した AI ツールから、起動中のエミュレーターを操作・確認できます。キー入力、画面の取得、ディスクやステートの操作、メモリの参照、ブレークポイント、書き込み元の追跡、サイクル計測などを AI に任せられます。
+
+設定の「一般」で「AI ツールからの操作を許可」をオンにし、URL とトークン、または設定 JSON をコピーしてクライアントに登録します。接続は `http://127.0.0.1:<ポート>/mcp` への Streamable HTTP で、要求には `Authorization: Bearer <トークン>` が要ります。
+
+| クライアント | 登録のしかた |
+| --- | --- |
+| Claude Code | `claude mcp add --transport http bubilator88 <URL> --header "Authorization: Bearer <トークン>"` |
+| Cursor | `~/.cursor/mcp.json` に設定 JSON をそのまま書く |
+| VS Code | `.vscode/mcp.json` に設定 JSON を書き、最上位のキー `mcpServers` を `servers` にする |
+| Gemini CLI | `~/.gemini/settings.json` に設定 JSON を書き、`url` を `httpUrl` にして `type` を消す |
+| Codex | `~/.codex/config.toml` に `[mcp_servers.bubilator88]` を作り、`url = "<URL>"` と `bearer_token_env_var = "<トークンを入れた環境変数名>"` を書く |
+
 ## System Requirements
 
 - macOS 26.0 (Tahoe) 以降

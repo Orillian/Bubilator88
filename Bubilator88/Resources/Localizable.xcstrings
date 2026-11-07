@@ -106,24 +106,46 @@
         }
       }
     },
-    "Copy Command for Claude Code" : {
-      "comment" : "Settings button: copies the claude mcp add command",
+    "Copy Settings JSON" : {
+      "comment" : "Settings button: copies an MCP client settings entry for the AI tools server",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Claude Code 用のコマンドをコピー"
+            "value" : "設定 JSON をコピー"
           }
         }
       }
     },
-    "When on, AI tools such as Claude Code can operate and inspect the emulator." : {
+    "Copy Token" : {
+      "comment" : "Settings button: copies the AI tools access token",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "トークンをコピー"
+          }
+        }
+      }
+    },
+    "Copy URL" : {
+      "comment" : "Settings button: copies the AI tools server URL",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL をコピー"
+          }
+        }
+      }
+    },
+    "When on, AI tools that support MCP can operate and inspect the emulator." : {
       "comment" : "Settings description for the AI tools toggle",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "オンにすると、Claude Code などの AI ツールがエミュレータを操作・確認できます。"
+            "value" : "オンにすると、MCP に対応した AI ツールがエミュレータを操作・確認できます。"
           }
         }
       }
