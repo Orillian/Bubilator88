@@ -19,6 +19,12 @@ extension EmulatorViewModel {
       automationNeedsDebugger = false
       updateDebuggerAttachment()
     }
+    // The watches, write tracking and profiling were the agent's alone and
+    // the debugger window cannot show them, so they end with its session.
+    // Breakpoints stay: the window shares them.
+    debugger.removeAllWatches()
+    debugger.isTrackingWrites = false
+    emuQueue.async { [pc88] in pc88.profiler = nil }
     let settings = Settings.shared
     guard settings.automationEnabled,
           Settings.automationPortRange.contains(settings.automationPort),
