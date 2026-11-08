@@ -106,35 +106,24 @@
         }
       }
     },
-    "Copy Settings JSON" : {
-      "comment" : "Settings button: copies an MCP client settings entry for the AI tools server",
+    "Copy Connection Settings" : {
+      "comment" : "Settings button: copies the MCP client settings for the AI tools server",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "設定 JSON をコピー"
+            "value" : "接続設定をコピー"
           }
         }
       }
     },
-    "Copy Token" : {
-      "comment" : "Settings button: copies the AI tools access token",
+    "Paste it into your AI tool's MCP settings, or ask the AI to add it." : {
+      "comment" : "Settings description under the Copy Connection Settings button",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "トークンをコピー"
-          }
-        }
-      }
-    },
-    "Copy URL" : {
-      "comment" : "Settings button: copies the AI tools server URL",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "URL をコピー"
+            "value" : "AI ツールの MCP 設定に貼り付けるか、AI に渡して登録を頼みます。"
           }
         }
       }

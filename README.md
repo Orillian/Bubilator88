@@ -91,15 +91,10 @@ Apple Vision OCR + Translation フレームワークを使い、画面上の日�
 
 [Model Context Protocol](https://modelcontextprotocol.io) に対応した AI ツールから、起動中のエミュレーターを操作・確認できます。キー入力、画面の取得、ディスクやステートの操作、メモリの参照、ブレークポイント、書き込み元の追跡、サイクル計測などを AI に任せられます。
 
-設定の「一般」で「AI ツールからの操作を許可」をオンにし、URL とトークン、または設定 JSON をコピーしてクライアントに登録します。接続は `http://127.0.0.1:<ポート>/mcp` への Streamable HTTP で、要求には `Authorization: Bearer <トークン>` が要ります。
+設定の「一般」で「AI ツールからの操作を許可」をオンにし、「接続設定をコピー」を押します。コピーされるのは多くのクライアントが読む `mcpServers` 形式の JSON で、URL (`http://127.0.0.1:<ポート>/mcp`) とトークンが入っています。
 
-| クライアント | 登録のしかた |
-| --- | --- |
-| Claude Code | `claude mcp add --transport http bubilator88 <URL> --header "Authorization: Bearer <トークン>"` |
-| Cursor | `~/.cursor/mcp.json` に設定 JSON をそのまま書く |
-| VS Code | `.vscode/mcp.json` に設定 JSON を書き、最上位のキー `mcpServers` を `servers` にする |
-| Gemini CLI | `~/.gemini/settings.json` に設定 JSON を書き、`url` を `httpUrl` にして `type` を消す |
-| Codex | `~/.codex/config.toml` に `[mcp_servers.bubilator88]` を作り、`url = "<URL>"` と `bearer_token_env_var = "<トークンを入れた環境変数名>"` を書く |
+- **AI に登録を頼む**: Claude Code や Codex などに貼り付けて「この MCP サーバーを登録して」と頼めば、そのクライアントの書式で登録してくれます。
+- **自分で登録する**: Cursor (`~/.cursor/mcp.json`) にはそのまま書けます。VS Code (`.vscode/mcp.json`) は最上位のキーを `servers` に、Gemini CLI (`~/.gemini/settings.json`) は `url` を `httpUrl` にします。
 
 ## System Requirements
 

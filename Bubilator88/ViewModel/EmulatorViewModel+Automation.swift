@@ -47,41 +47,26 @@ extension EmulatorViewModel {
     }
   }
 
-  /// What an MCP client needs to connect, to copy from Settings.
-  enum AutomationConnectionItem {
-    /// The server's Streamable HTTP endpoint.
-    case url
-    /// The bearer token every request must carry.
-    case token
-    /// An `mcpServers` entry, the form most MCP clients' settings files take.
-    case configuration
-  }
-
-  func automationConnection(_ item: AutomationConnectionItem) -> String {
+  /// What an MCP client needs to connect: an `mcpServers` entry, the form
+  /// most clients' settings files take. It holds the URL and the token, so
+  /// it also serves as what to hand an AI agent that registers servers itself.
+  var automationConnectionSettings: String {
     let settings = Settings.shared
-    let url = "http://127.0.0.1:\(settings.automationPort)/mcp"
-    switch item {
-    case .url:
-      return url
-    case .token:
-      return settings.automationToken
-    case .configuration:
-      let entry: [String: Any] = [
-        "type": "http",
-        "url": url,
-        "headers": ["Authorization": "Bearer \(settings.automationToken)"],
-      ]
-      let options: JSONSerialization.WritingOptions = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-      guard let data = try? JSONSerialization.data(withJSONObject: ["mcpServers": ["bubilator88": entry]], options: options) else {
-        return ""
-      }
-      return String(decoding: data, as: UTF8.self)
+    let entry: [String: Any] = [
+      "type": "http",
+      "url": "http://127.0.0.1:\(settings.automationPort)/mcp",
+      "headers": ["Authorization": "Bearer \(settings.automationToken)"],
+    ]
+    let options: JSONSerialization.WritingOptions = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+    guard let data = try? JSONSerialization.data(withJSONObject: ["mcpServers": ["bubilator88": entry]], options: options) else {
+      return ""
     }
+    return String(decoding: data, as: UTF8.self)
   }
 
-  func copyAutomationConnection(_ item: AutomationConnectionItem) {
+  func copyAutomationConnection() {
     NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(automationConnection(item), forType: .string)
+    NSPasteboard.general.setString(automationConnectionSettings, forType: .string)
     showToast(String(localized: "Copied", comment: ""))
   }
 }

@@ -73,11 +73,9 @@ struct GeneralSettingsTab: View {
               .font(.subheadline)
               .foregroundStyle(.red)
           }
-          HStack {
-            Button("Copy URL") { viewModel.copyAutomationConnection(.url) }
-            Button("Copy Token") { viewModel.copyAutomationConnection(.token) }
-            Button("Copy Settings JSON") { viewModel.copyAutomationConnection(.configuration) }
-          }
+          Button("Copy Connection Settings") { viewModel.copyAutomationConnection() }
+          Text("Paste it into your AI tool's MCP settings, or ask the AI to add it.")
+            .settingsDescriptionStyle()
         }
       }
       .onChange(of: settings.automationEnabled) { viewModel.applyAutomationSetting() }
