@@ -47,26 +47,32 @@ extension EmulatorViewModel {
     }
   }
 
-  /// What an MCP client needs to connect: an `mcpServers` entry, the form
-  /// most clients' settings files take. It holds the URL and the token, so
-  /// it also serves as what to hand an AI agent that registers servers itself.
-  var automationConnectionSettings: String {
-    let settings = Settings.shared
-    let entry: [String: Any] = [
-      "type": "http",
-      "url": "http://127.0.0.1:\(settings.automationPort)/mcp",
-      "headers": ["Authorization": "Bearer \(settings.automationToken)"],
-    ]
-    let options: JSONSerialization.WritingOptions = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-    guard let data = try? JSONSerialization.data(withJSONObject: ["mcpServers": ["bubilator88": entry]], options: options) else {
-      return ""
+  /// Whether AI tools may connect. The Settings toggle and the Develop menu
+  /// both set it here, so the server follows whichever is used.
+  var automationEnabled: Bool {
+    get { Settings.shared.automationEnabled }
+    set {
+      Settings.shared.automationEnabled = newValue
+      applyAutomationSetting()
     }
-    return String(decoding: data, as: UTF8.self)
   }
 
-  func copyAutomationConnection() {
+  var automationPort: Int {
+    get { Settings.shared.automationPort }
+    set {
+      Settings.shared.automationPort = newValue
+      applyAutomationSetting()
+    }
+  }
+
+  /// The AI tools server's Streamable HTTP endpoint.
+  var automationServerURL: String {
+    "http://127.0.0.1:\(Settings.shared.automationPort)/mcp"
+  }
+
+  func copyAutomationRegistration(_ text: String) {
     NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(automationConnectionSettings, forType: .string)
+    NSPasteboard.general.setString(text, forType: .string)
     showToast(String(localized: "Copied", comment: ""))
   }
 }

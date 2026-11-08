@@ -54,6 +54,7 @@ final class Settings {
     static let automationEnabled         = "automationEnabled"
     static let automationPort            = "automationPort"
     static let automationToken           = "automationToken"
+    static let automationClient          = "automationClient"
     static let lastUpdateCheck           = "lastUpdateCheck"
     static let updateRemindAfter         = "updateRemindAfter"
     static let skippedUpdateVersion      = "skippedUpdateVersion"
@@ -239,6 +240,11 @@ final class Settings {
   /// `init` on the first launch; it keeps web pages, which cannot learn it,
   /// from reaching the server.
   private(set) var automationToken: String = ""
+
+  /// The client Settings last showed the registration for.
+  var automationClient: AutomationClient = .claudeCode {
+    didSet { UserDefaults.standard.set(automationClient.rawValue, forKey: Keys.automationClient) }
+  }
 
   /// Ports the AI tools server may listen on: the unprivileged ones.
   static let automationPortRange = 1024...65535
@@ -722,6 +728,9 @@ final class Settings {
       // Two UUIDs' worth of randomness, without the dashes.
       automationToken = (UUID().uuidString + UUID().uuidString).replacingOccurrences(of: "-", with: "").lowercased()
       UserDefaults.standard.set(automationToken, forKey: Keys.automationToken)
+    }
+    if let v = UserDefaults.standard.string(forKey: Keys.automationClient), let client = AutomationClient(rawValue: v) {
+      automationClient = client
     }
     if let v = UserDefaults.standard.object(forKey: Keys.backgroundAudio) as? Bool {
       backgroundAudio = v

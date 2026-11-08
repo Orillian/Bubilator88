@@ -14,6 +14,8 @@ struct DebugCommands: Commands {
         }
         .keyboardShortcut("d", modifiers: [.command, .shift])
 
+        Toggle("Allow Control from AI Tools", isOn: $viewModel.automationEnabled)
+
         Divider()
 
         #if DEBUG
