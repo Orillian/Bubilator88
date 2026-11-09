@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="AppleTitle" content="AI ツールからの操作">
+    <meta name="description" content="MCP に対応した AI ツールからエミュレータを操作する、AI ツールへの登録、ポートと安全性">
+    <meta name="keywords" content="AI, MCP, Claude Code, Codex, Gemini, Copilot, Cursor, 自動操作, エージェント">
+    <meta name="robots" content="index">
+    <title>AI ツールからの操作</title>
+    <link rel="stylesheet" href="../../shrd/helpstyle.css">
+</head>
+<body>
+    <nav role="navigation" aria-hidden="true">
+        <h3>目次</h3>
+        <ul>
+            <li><a href="../index.html">Bubilator88 ヘルプ</a></li>
+            <li><a href="getting-started.html">はじめに</a></li>
+            <li><a href="disks.html">ディスク操作</a></li>
+            <li><a href="cassette.html">カセットテープ・メモリイメージ</a></li>
+            <li><a href="cdrom.html">CD-ROM</a></li>
+            <li><a href="keyboard.html">キーボード</a></li>
+            <li><a href="display.html">表示設定</a></li>
+            <li><a href="audio.html">サウンド</a></li>
+            <li><a href="savestates.html">ステートセーブ</a></li>
+            <li><a href="controller.html">ゲームコントローラ</a></li>
+            <li><a href="mouse.html">マウス</a></li>
+            <li><a href="controlzones.html">操作領域</a></li>
+            <li><a href="cheats.html">チート</a></li>
+            <li><a href="ai-tools.html">AI ツールからの操作</a></li>
+            <li><a href="shortcuts.html">ショートカット一覧</a></li>
+        </ul>
+    </nav>
+
+    <div class="help-content">
+    <a name="ai-tools"></a>
+    <h1>AI ツールからの操作</h1>
+    <p>MCP（Model Context Protocol）に対応した AI ツールから、起動中の Bubilator88 を操作できます。「このディスクを起動して、タイトル画面まで進めて」のように頼むと、AI がキーを押し、エミュレータを進め、画面を見て確かめます。</p>
+
+    <h2>AI ができること</h2>
+    <table>
+        <tr><th>種類</th><th>内容</th></tr>
+        <tr><td>実行</td><td>リセット、指定したフレーム数だけ進める、一時停止と再開</td></tr>
+        <tr><td>入力</td><td>キー操作、文字列の入力、入力の記録と再生</td></tr>
+        <tr><td>画面</td><td>スクリーンショット、テキスト画面の読み取り</td></tr>
+        <tr><td>メディア</td><td>ディスクとテープのマウント、ステートの保存と読み込み</td></tr>
+        <tr><td>開発</td><td>レジスタやメモリの読み書き、逆アセンブル、ブレークポイント、メモリ書き込みの監視、処理時間の計測</td></tr>
+    </table>
+    <p>AI の操作は、そのまま画面やデバッガのウィンドウに反映されます。</p>
+
+    <h2>使い方</h2>
+    <ol>
+        <li><strong>設定 &gt; 一般 &gt; AI ツールからの操作 (MCP)</strong> で、<strong>AI ツールからの操作を許可</strong> をオンにします。</li>
+        <li><strong>登録先</strong> で、使っている AI ツールを選びます。</li>
+        <li>表示されたコマンドや設定を <strong>コピー</strong> し、欄の下の説明に従って AI ツールに登録します。</li>
+        <li>AI ツールで新しいセッションを始めます。</li>
+    </ol>
+    <table>
+        <tr><th>登録先</th><th>登録のしかた</th></tr>
+        <tr><td>Claude Code、Gemini CLI、GitHub Copilot (VS Code)</td><td>コマンドをターミナルで実行します</td></tr>
+        <tr><td>Codex CLI</td><td><code>~/.codex/config.toml</code> に追記します</td></tr>
+        <tr><td>Pi</td><td><code>~/.pi/agent/mcp.json</code> に追記し、Pi で <code>/reload</code> を実行します</td></tr>
+        <tr><td>opencode</td><td><code>~/.config/opencode/opencode.json</code> に追記します</td></tr>
+        <tr><td>Cursor</td><td><code>~/.cursor/mcp.json</code> に追記します</td></tr>
+        <tr><td>その他 (JSON)</td><td>AI ツールの MCP 設定に貼り付けます。AI に貼り付けて、登録を頼んでもかまいません</td></tr>
+    </table>
+    <p>欄の中身は編集できます。AI ツールの書き方が変わって登録できないときは、欄で直してからコピーしてください。</p>
+    <p>開発メニューを表示しているときは、<strong>開発 &gt; AI ツールからの操作を許可</strong> でも切り替えられます。設定は次回起動時も保持されます。</p>
+
+    <h2>ポートと安全性</h2>
+    <ul>
+        <li>接続できるのは、この Mac の中からだけです。</li>
+        <li>ポートの初期値は 18801 です。ほかのアプリと重なるときは変更し、AI ツールに登録し直してください。</li>
+        <li>登録用のテキストには、接続に使う合い言葉（トークン）が入っています。他の人に見せないでください。</li>
+        <li>AI はディスクやステートのファイルを、指定されたパスで読み書きします。使わないときはオフにしておくと安心です。</li>
+    </ul>
+
+    <p><a href="../index.html">Bubilator88 ヘルプに戻る</a></p>
+    </div>
+
+    <script src="../../shrd/helptoc.js"></script>
+</body>
+</html>
