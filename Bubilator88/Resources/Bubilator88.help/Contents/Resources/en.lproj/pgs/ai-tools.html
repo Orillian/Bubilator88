@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="AppleTitle" content="Control from AI Tools">
+    <meta name="description" content="Letting AI tools that support MCP control the emulator, registering it with them, and the port and safety">
+    <meta name="keywords" content="AI, MCP, Claude Code, Codex, Gemini, Copilot, Cursor, automation, agent">
+    <meta name="robots" content="index">
+    <title>Control from AI Tools</title>
+    <link rel="stylesheet" href="../../shrd/helpstyle.css">
+</head>
+<body>
+    <nav role="navigation" aria-hidden="true">
+        <h3>Contents</h3>
+        <ul>
+            <li><a href="../index.html">Bubilator88 Help</a></li>
+            <li><a href="getting-started.html">Getting Started</a></li>
+            <li><a href="disks.html">Using Disks</a></li>
+            <li><a href="cassette.html">Cassette Tape and Memory Images</a></li>
+            <li><a href="cdrom.html">CD-ROM</a></li>
+            <li><a href="keyboard.html">Keyboard</a></li>
+            <li><a href="display.html">Display</a></li>
+            <li><a href="audio.html">Audio</a></li>
+            <li><a href="savestates.html">Save States</a></li>
+            <li><a href="controller.html">Game Controller</a></li>
+            <li><a href="mouse.html">Mouse</a></li>
+            <li><a href="controlzones.html">Control Zones</a></li>
+            <li><a href="cheats.html">Cheats</a></li>
+            <li><a href="ai-tools.html">Control from AI Tools</a></li>
+            <li><a href="shortcuts.html">Keyboard Shortcuts</a></li>
+        </ul>
+    </nav>
+
+    <div class="help-content">
+    <a name="ai-tools"></a>
+    <h1>Control from AI Tools</h1>
+    <p>AI tools that support MCP (Model Context Protocol) can control Bubilator88 while it runs. Ask for something like "boot this disk and get to the title screen", and the AI presses the keys, runs the emulator and checks the screen.</p>
+
+    <h2>What the AI Can Do</h2>
+    <table>
+        <tr><th>Area</th><th>Description</th></tr>
+        <tr><td>Running</td><td>Reset, run a given number of frames, pause and resume</td></tr>
+        <tr><td>Input</td><td>Press keys, type text, record and replay input</td></tr>
+        <tr><td>Screen</td><td>Take screenshots and read the text screen</td></tr>
+        <tr><td>Media</td><td>Mount disks and tapes, save and load states</td></tr>
+        <tr><td>Development</td><td>Read and write registers and memory, disassemble, set breakpoints, watch memory writes, and time code</td></tr>
+    </table>
+    <p>What the AI does shows on the screen and in the debugger window as it happens.</p>
+
+    <h2>Setting It Up</h2>
+    <ol>
+        <li>In <strong>Settings &gt; General &gt; AI Tool Control (MCP)</strong>, turn on <strong>Allow control from AI tools</strong>.</li>
+        <li>Under <strong>Register With</strong>, choose the AI tool you use.</li>
+        <li>Click <strong>Copy</strong> and register the command or settings shown, as the note below them says.</li>
+        <li>Start a new session in the AI tool.</li>
+    </ol>
+    <table>
+        <tr><th>Register With</th><th>How</th></tr>
+        <tr><td>Claude Code, Gemini CLI, GitHub Copilot (VS Code)</td><td>Run the command in Terminal</td></tr>
+        <tr><td>Codex CLI</td><td>Add it to <code>~/.codex/config.toml</code></td></tr>
+        <tr><td>Pi</td><td>Add it to <code>~/.pi/agent/mcp.json</code>, then run <code>/reload</code> in Pi</td></tr>
+        <tr><td>opencode</td><td>Add it to <code>~/.config/opencode/opencode.json</code></td></tr>
+        <tr><td>Cursor</td><td>Add it to <code>~/.cursor/mcp.json</code></td></tr>
+        <tr><td>Other (JSON)</td><td>Paste it into the AI tool's MCP settings, or paste it to the AI and ask it to add it</td></tr>
+    </table>
+    <p>The text can be edited. If an AI tool has changed how it is registered, fix the text before copying it.</p>
+    <p>With the Develop menu shown, <strong>Develop &gt; Allow Control from AI Tools</strong> turns it on and off too. The setting is kept across launches.</p>
+
+    <h2>Port and Safety</h2>
+    <ul>
+        <li>Only this Mac can connect.</li>
+        <li>The port starts at 18801. If another app uses it, change it and register again with your AI tools.</li>
+        <li>The registration text holds the password (token) for connecting. Do not show it to others.</li>
+        <li>The AI reads and writes disk and state files at the paths it gives. Turn it off when you are not using it.</li>
+    </ul>
+
+    <p><a href="../index.html">Back to Bubilator88 Help</a></p>
+    </div>
+
+    <script src="../../shrd/helptoc.js"></script>
+</body>
+</html>
