@@ -51,6 +51,10 @@ final class Settings {
     static let resumeOnLaunch            = "resumeOnLaunch"
     static let runInBackground           = "runInBackground"
     static let backgroundAudio           = "backgroundAudio"
+    static let automationEnabled         = "automationEnabled"
+    static let automationPort            = "automationPort"
+    static let automationToken           = "automationToken"
+    static let automationClient          = "automationClient"
     static let lastUpdateCheck           = "lastUpdateCheck"
     static let updateRemindAfter         = "updateRemindAfter"
     static let skippedUpdateVersion      = "skippedUpdateVersion"
@@ -220,6 +224,30 @@ final class Settings {
   var backgroundAudio: Bool = false {
     didSet { UserDefaults.standard.set(backgroundAudio, forKey: Keys.backgroundAudio) }
   }
+
+  /// Serve the MCP tools to AI agents on 127.0.0.1:`automationPort`.
+  var automationEnabled: Bool = false {
+    didSet { UserDefaults.standard.set(automationEnabled, forKey: Keys.automationEnabled) }
+  }
+
+  static let defaultAutomationPort = 18801
+
+  var automationPort: Int = Settings.defaultAutomationPort {
+    didSet { UserDefaults.standard.set(automationPort, forKey: Keys.automationPort) }
+  }
+
+  /// The bearer token AI agents send with every request. Made and saved by
+  /// `init` on the first launch; it keeps web pages, which cannot learn it,
+  /// from reaching the server.
+  private(set) var automationToken: String = ""
+
+  /// The client Settings last showed the registration for.
+  var automationClient: AutomationClient = .claudeCode {
+    didSet { UserDefaults.standard.set(automationClient.rawValue, forKey: Keys.automationClient) }
+  }
+
+  /// Ports the AI tools server may listen on: the unprivileged ones.
+  static let automationPortRange = 1024...65535
 
   /// When the release feed was last fetched by the launch check.
   var lastUpdateCheck: Date? {
@@ -687,6 +715,22 @@ final class Settings {
     }
     if let v = UserDefaults.standard.object(forKey: Keys.runInBackground) as? Bool {
       runInBackground = v
+    }
+    if let v = UserDefaults.standard.object(forKey: Keys.automationEnabled) as? Bool {
+      automationEnabled = v
+    }
+    if let v = UserDefaults.standard.object(forKey: Keys.automationPort) as? Int {
+      automationPort = v
+    }
+    if let v = UserDefaults.standard.string(forKey: Keys.automationToken), !v.isEmpty {
+      automationToken = v
+    } else {
+      // Two UUIDs' worth of randomness, without the dashes.
+      automationToken = (UUID().uuidString + UUID().uuidString).replacingOccurrences(of: "-", with: "").lowercased()
+      UserDefaults.standard.set(automationToken, forKey: Keys.automationToken)
+    }
+    if let v = UserDefaults.standard.string(forKey: Keys.automationClient), let client = AutomationClient(rawValue: v) {
+      automationClient = client
     }
     if let v = UserDefaults.standard.object(forKey: Keys.backgroundAudio) as? Bool {
       backgroundAudio = v

@@ -62,6 +62,204 @@
         }
       }
     },
+    "AI Control Unavailable" : {
+      "comment" : "Alert title: the AI tools server could not start (port in use, for one)",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI からの操作を開始できません"
+          }
+        }
+      }
+    },
+    "Allow control from AI tools" : {
+      "comment" : "Settings toggle: serve the MCP tools to AI agents",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI ツールからの操作を許可"
+          }
+        }
+      }
+    },
+    "Choose a port from 1024 to 65535." : {
+      "comment" : "Settings warning under the AI tools port field: the number is out of range",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1024〜65535 のポート番号を指定してください。"
+          }
+        }
+      }
+    },
+    "Copied" : {
+      "comment" : "Toast after copying the Claude Code setup command",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コピーしました"
+          }
+        }
+      }
+    },
+    "AI Tool Control (MCP)" : {
+      "comment" : "Settings section title for the AI tools server",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI ツールからの操作 (MCP)"
+          }
+        }
+      }
+    },
+    "Add it to ~/.codex/config.toml, then start a new session." : {
+      "comment" : "AI tool registration for Codex CLI",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "~/.codex/config.toml に追記し、新しいセッションを始めます。"
+          }
+        }
+      }
+    },
+    "Add it to ~/.config/opencode/opencode.json, then start a new session." : {
+      "comment" : "AI tool registration for opencode",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "~/.config/opencode/opencode.json に追記し、新しいセッションを始めます。"
+          }
+        }
+      }
+    },
+    "Add it to ~/.cursor/mcp.json." : {
+      "comment" : "AI tool registration for Cursor",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "~/.cursor/mcp.json に追記します。"
+          }
+        }
+      }
+    },
+    "Add it to ~/.pi/agent/mcp.json, then run /reload in Pi." : {
+      "comment" : "AI tool registration for Pi",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "~/.pi/agent/mcp.json に追記し、Pi で /reload を実行します。"
+          }
+        }
+      }
+    },
+    "Allow Control from AI Tools" : {
+      "comment" : "Develop menu toggle for the AI tools server",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI ツールからの操作を許可"
+          }
+        }
+      }
+    },
+    "Copy" : {
+      "comment" : "Settings button: copies the AI tool registration as shown",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コピー"
+          }
+        }
+      }
+    },
+    "Editors" : {
+      "comment" : "AI tool picker section: editor-based tools",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エディタ"
+          }
+        }
+      }
+    },
+    "Other (JSON)" : {
+      "comment" : "AI tool picker: any MCP client, given the settings as JSON",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "その他 (JSON)"
+          }
+        }
+      }
+    },
+    "Register With" : {
+      "comment" : "Settings picker: which AI tool to show the registration for",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登録先"
+          }
+        }
+      }
+    },
+    "Run it in Terminal, then start a new session." : {
+      "comment" : "AI tool registration: how to use a command",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ターミナルで実行し、新しいセッションを始めます。"
+          }
+        }
+      }
+    },
+    "Terminal" : {
+      "comment" : "AI tool picker section: terminal-based tools",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ターミナル"
+          }
+        }
+      }
+    },
+    "Paste it into your AI tool's MCP settings, or ask the AI to add it." : {
+      "comment" : "AI tool registration for any other MCP client",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI ツールの MCP 設定に貼り付けるか、AI に渡して登録を頼みます。"
+          }
+        }
+      }
+    },
+    "When on, AI tools that support MCP can operate and inspect the emulator." : {
+      "comment" : "Settings description for the AI tools toggle",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オンにすると、MCP に対応した AI ツールがエミュレータを操作・確認できます。"
+          }
+        }
+      }
+    },
     "“%@” is not a control-zone layout file." : {
       "localizations" : {
         "ja" : {

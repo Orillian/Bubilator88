@@ -62,6 +62,21 @@ struct GeneralSettingsTab: View {
           .settingsDescriptionStyle()
       }
 
+      Section("AI Tool Control (MCP)") {
+        Toggle("Allow control from AI tools", isOn: $viewModel.automationEnabled)
+        Text("When on, AI tools that support MCP can operate and inspect the emulator.")
+          .settingsDescriptionStyle()
+        if viewModel.automationEnabled {
+          TextField("Port", value: $viewModel.automationPort, format: .number.grouping(.never))
+          if !Settings.automationPortRange.contains(viewModel.automationPort) {
+            Text("Choose a port from 1024 to 65535.")
+              .font(.subheadline)
+              .foregroundStyle(.red)
+          }
+          AutomationRegistrationView(viewModel: viewModel, client: $settings.automationClient)
+        }
+      }
+
       Section {
         Toggle("Check for updates at launch", isOn: $settings.automaticUpdateCheck)
       }
@@ -92,5 +107,42 @@ struct GeneralSettingsTab: View {
           .disabled(viewModel.aiModelDownload != nil)
       }
     }
+  }
+}
+
+/// The registration for the chosen AI tool, editable so the user can fix it
+/// when the tool's syntax has moved on, and copied as shown.
+private struct AutomationRegistrationView: View {
+  let viewModel: EmulatorViewModel
+  @Binding var client: AutomationClient
+  @State private var text = ""
+
+  private var generated: String {
+    client.registration(url: viewModel.automationServerURL, token: Settings.shared.automationToken)
+  }
+
+  var body: some View {
+    Picker("Register With", selection: $client) {
+      Section("Terminal") {
+        ForEach(AutomationClient.terminal) { Text($0.name).tag($0) }
+      }
+      Section("Editors") {
+        ForEach(AutomationClient.editors) { Text($0.name).tag($0) }
+      }
+      Divider()
+      Text(AutomationClient.other.name).tag(AutomationClient.other)
+    }
+    VStack(alignment: .leading, spacing: 6) {
+      PlainTextEditor(text: $text)
+        .frame(height: 96)
+      HStack(alignment: .firstTextBaseline) {
+        Text(client.instruction)
+          .settingsDescriptionStyle()
+        Spacer()
+        Button("Copy", systemImage: "document.on.clipboard") { viewModel.copyAutomationRegistration(text) }
+      }
+    }
+    // Edits last until the client or the port changes the text underneath.
+    .onChange(of: generated, initial: true) { text = generated }
   }
 }

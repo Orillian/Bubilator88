@@ -374,7 +374,7 @@ final class DebugSession {
     guard lastSeenRunState != newState else { return }
     if case .paused(let reason) = newState {
       switch reason {
-      case .breakpoint:
+      case .breakpoint, .watch:
         viewModel.showToast("Breakpoint hit")
       case .userRequest, .initialLaunch:
         break

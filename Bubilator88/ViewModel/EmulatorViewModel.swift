@@ -692,19 +692,33 @@ final class EmulatorViewModel {
   /// across Debug Window open/close cycles. Only attached to Machine
   /// while the window is visible, keeping the hot path fast otherwise.
   let debugger = Debugger()
+  /// The debug window is open.
+  @ObservationIgnored private var debugWindowNeedsDebugger = false
+  /// An AI agent has breakpoints set (`EmulatorViewModel+Automation.swift`).
+  @ObservationIgnored var automationNeedsDebugger = false
+  /// Serves the AI tools while Settings allows it.
+  @ObservationIgnored var automationServer: AutomationHTTPServer?
 
   /// Attach the debugger to the machine. Call when opening the debug window.
   func attachDebugger() {
-    emuQueue.async { [pc88, debugger] in
-      pc88.debugger = debugger
-    }
+    debugWindowNeedsDebugger = true
+    updateDebuggerAttachment()
   }
 
   /// Detach the debugger from the machine. Call when closing the debug
-  /// window so the hot path returns to full speed.
+  /// window so the hot path returns to full speed. It stays attached while
+  /// an AI agent has breakpoints set.
   func detachDebugger() {
-    emuQueue.async { [pc88] in
-      pc88.debugger = nil
+    debugWindowNeedsDebugger = false
+    updateDebuggerAttachment()
+  }
+
+  /// Attach the debugger while either the debug window or an AI agent's
+  /// breakpoints need it.
+  func updateDebuggerAttachment() {
+    let attach = debugWindowNeedsDebugger || automationNeedsDebugger
+    emuQueue.async { [pc88, debugger] in
+      pc88.debugger = attach ? debugger : nil
     }
   }
 
@@ -1048,6 +1062,8 @@ final class EmulatorViewModel {
     if let model = videoFilter.downloadableModel, !AIModelStore.shared.isInstalled(model) {
       Settings.shared.videoFilter = VideoFilter.none.rawValue
     }
+
+    applyAutomationSetting()
   }
 
   // MARK: - Execution Control
@@ -1378,7 +1394,9 @@ final class EmulatorViewModel {
   /// values, so the UI label and the actual ROM-visible mode can never
   /// drift — even if Settings.dipSw1/dipSw2Base were left stale by a
   /// previous save-state load or another unusual path.
-  private func performReset(resetTranslation: Bool, forceRestart: Bool = false) {
+  ///
+  /// `clock8MHz` overrides the clock setting for this reset only.
+  func performReset(resetTranslation: Bool, forceRestart: Bool = false, clock8MHz clockOverride: Bool? = nil) {
     let wasRunning = isRunning || forceRestart
     cancelScriptPlayback()
     cancelScriptRecording()
@@ -1394,7 +1412,7 @@ final class EmulatorViewModel {
       if Settings.shared.dipSw1 != sw1 { Settings.shared.dipSw1 = sw1 }
       if Settings.shared.dipSw2Base != sw2Base { Settings.shared.dipSw2Base = sw2Base }
     }
-    let use8MHz = clock8MHz
+    let use8MHz = clockOverride ?? clock8MHz
     let monitorType = Settings.shared.monitorType
     let memoryWaitDip = Settings.shared.memoryWaitDip
     refreshCDBios()
@@ -1556,7 +1574,7 @@ final class EmulatorViewModel {
   private func performSave(to path: URL) {
     let wasRunning = isRunning
     if wasRunning { stop() }
-    writeSaveState(to: path)
+    try? writeSaveState(to: path)
     saveStateRevision += 1
     if wasRunning { start() }
     showToast(String(localized: "State saved", comment: ""))
@@ -1565,7 +1583,7 @@ final class EmulatorViewModel {
   /// Serializes the machine and its app metadata into `path`. The caller must
   /// have `stop()`ped the run loop: the thumbnail is read straight out of
   /// `pixelBuffer`.
-  private func writeSaveState(to path: URL) {
+  func writeSaveState(to path: URL) throws {
     // Capture thumbnail on main thread (pixelBuffer access)
     let thumbData = captureThumbnail()
     // Only the serialization needs the machine; the file write must stay
@@ -1610,7 +1628,7 @@ final class EmulatorViewModel {
                                   extraSections: extraSections)
     }
     try? FileManager.default.createDirectory(at: Self.saveStateDir, withIntermediateDirectories: true)
-    try? Data(stateData).write(to: path, options: .atomic)
+    try Data(stateData).write(to: path, options: .atomic)
   }
 
   private func performLoad(from path: URL) {
@@ -1629,7 +1647,7 @@ final class EmulatorViewModel {
   /// Replaces the machine with the state in `fileData` and brings the UI and
   /// Settings in line with it. Restarts the run loop if it was running, also
   /// when the load throws. On a throw the machine may be partly restored.
-  private func applySaveState(_ fileData: Data, from path: URL) throws {
+  func applySaveState(_ fileData: Data, from path: URL) throws {
     // Loading replaces the whole machine state, so a live script player /
     // recorder would be operating on a different machine than it began on
     // (corrupt recording, player injecting into the wrong state). Tear them
@@ -1863,7 +1881,7 @@ final class EmulatorViewModel {
   func saveResumeState() {
     guard romLoaded else { return }
     if isRunning { stop() }
-    writeSaveState(to: resumeStatePath)
+    try? writeSaveState(to: resumeStatePath)
   }
 
   /// Restores the state saved at the last quit, when the setting asks for it

@@ -101,6 +101,7 @@ extension Debugger.RunState {
       case .userRequest:   return "PAUSED (User)"
       case .initialLaunch: return "PAUSED (Initial)"
       case .breakpoint:    return "PAUSED (Breakpoint)"
+      case .watch:         return "PAUSED (Watch)"
       }
     }
   }

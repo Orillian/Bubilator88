@@ -87,6 +87,10 @@ Apple Vision OCR + Translation フレームワークを使い、画面上の日�
 
 エミュレータの画面テキストを macOS のクリップボードへコピー、またはクリップボードのテキストを擬似キー入力として流し込むことができます。半角カナを含む BASIC プログラムのリスト転記や、サンプルコードの貼り付けが手打ちなしで行えます。
 
+### AI ツールからの操作 (MCP)
+
+[Model Context Protocol](https://modelcontextprotocol.io) に対応した AI ツールから、起動中のエミュレーターを操作・確認できます。登録のしかたは 設定 › 一般 › AI ツールからの操作 (MCP) にあります。
+
 ## System Requirements
 
 - macOS 26.0 (Tahoe) 以降
