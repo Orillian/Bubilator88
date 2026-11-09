@@ -139,7 +139,7 @@ private struct AutomationRegistrationView: View {
         Text(client.instruction)
           .settingsDescriptionStyle()
         Spacer()
-        Button("Copy") { viewModel.copyAutomationRegistration(text) }
+        Button("Copy", systemImage: "document.on.clipboard") { viewModel.copyAutomationRegistration(text) }
       }
     }
     // Edits last until the client or the port changes the text underneath.
