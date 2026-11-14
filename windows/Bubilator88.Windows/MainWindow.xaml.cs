@@ -70,6 +70,8 @@ public sealed partial class MainWindow : Window
     private int _sliceIndex;   // current x1-path slice (emulation thread only)
     private bool _paused;
     private bool _fullscreen;
+    private bool _changingPresenter;
+    private WindowPosition? _windowPosition;
     private int _windowScale = 2;   // ×1/×2/×4, persisted
     private int _emulationSpeed = 1; // fast-forward multiplier: 1/2/4/8/16
     private string _videoFilter = "None";   // None/Linear/Bicubic/CRT/xBRZ/Enhanced
@@ -143,8 +145,14 @@ public sealed partial class MainWindow : Window
         ApplyKeyboardConfig();   // push layout + numpad-emulation prefs to KeyMapping
         ConfigureFixedSize();
         AllowOversizeWindow();
+        // Move to the saved monitor before measuring its DPI for the view scale.
+        if (_windowPosition is { } position)
+            AppWindow.Move(new PointInt32(position.X, position.Y));
         uint dpi = GetDpiForWindow(WindowNative.GetWindowHandle(this));
         ResizeWindow(_windowScale, dpi > 0 ? dpi / 96.0 : 1.0);
+        RestoreWindowPosition();
+        _windowPosition = new WindowPosition(AppWindow.Position.X, AppWindow.Position.Y);
+        AppWindow.Changed += OnAppWindowChanged;
 
         Root.Loaded += OnLoaded;
         Closed += OnClosed;
@@ -245,6 +253,7 @@ public sealed partial class MainWindow : Window
             // ApplyWindowScale re-asserts the ctor's size (no SizeChanged fires),
             // so correct the panel-vs-chrome mismatch explicitly here too.
             FitWindowToContent();
+            RestoreWindowPosition();
 
             RebuildDiskMenu();
             UpdateDiskStatus();
@@ -1080,6 +1089,7 @@ public sealed partial class MainWindow : Window
         public string? AutomationToken { get; set; }
         public string AutomationClient { get; set; } = "claudeCode";
         public int WindowScale { get; set; } = 2;
+        public WindowPosition? WindowPosition { get; set; }
         public int BootModeIndex { get; set; }       // 0=N88-V2 1=V1H 2=V1S 3=N-BASIC
         public bool Clock8MHz { get; set; } = true;
         public int ExtRamCards { get; set; } = NativeApi.ExtRam_128KB;  // 0=none 1=128KB 8=1MB
@@ -1131,6 +1141,7 @@ public sealed partial class MainWindow : Window
             if (!string.IsNullOrWhiteSpace(s.AutomationToken)) _automationToken = s.AutomationToken;
             _automationClient = s.AutomationClient;
             _windowScale = NormalizeScale(s.WindowScale);
+            _windowPosition = s.WindowPosition;
             _bootModeIndex = Math.Clamp(s.BootModeIndex, 0, 3);
             _clock8MHz = s.Clock8MHz;
             _extRamCards = NormalizeExtRamCards(s.ExtRamCards);
@@ -1183,6 +1194,7 @@ public sealed partial class MainWindow : Window
                 AutomationToken = _automationToken,
                 AutomationClient = _automationClient,
                 WindowScale = _windowScale,
+                WindowPosition = _windowPosition,
                 AutomaticUpdateCheck = _automaticUpdateCheck,
                 LastUpdateCheck = _lastUpdateCheck,
                 UpdateRemindAfter = _updateRemindAfter,
@@ -1256,6 +1268,25 @@ public sealed partial class MainWindow : Window
         AppWindow.Resize(new SizeInt32(w, h));
     }
 
+    /// <summary>Restore onto the nearest remaining display, keeping the title bar in its work area.</summary>
+    private void RestoreWindowPosition()
+    {
+        if (_windowPosition is not { } position) return;
+        var bounds = new RectInt32(position.X, position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+        var display = DisplayArea.GetFromRect(bounds, DisplayAreaFallback.Nearest);
+        if (display is null) return;
+        var restored = position.ClampToWorkArea(AppWindow.Size, display.WorkArea);
+        AppWindow.Move(new PointInt32(restored.X, restored.Y));
+    }
+
+    /// <summary>Remember only normal window moves, never minimized or fullscreen coordinates.</summary>
+    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        if (!args.DidPositionChange || _fullscreen || _changingPresenter) return;
+        if (sender.Presenter is not OverlappedPresenter { State: OverlappedPresenterState.Restored }) return;
+        _windowPosition = new WindowPosition(sender.Position.X, sender.Position.Y);
+    }
+
     /// Forbid arbitrary user resizing/maximizing — the window only changes size
     /// via the fixed ×1/×2/×4 view scales (matches the macOS .contentSize /
     /// disabled-resize behavior). Programmatic AppWindow.Resize still works.
@@ -1270,21 +1301,26 @@ public sealed partial class MainWindow : Window
 
     private void OnToggleFullscreen(object sender, RoutedEventArgs e)
     {
-        _fullscreen = !_fullscreen;
-        AppWindow.SetPresenter(_fullscreen
-            ? AppWindowPresenterKind.FullScreen
-            : AppWindowPresenterKind.Default);
-        FullscreenItem.IsChecked = _fullscreen;
-        if (!_fullscreen)
+        _changingPresenter = true;
+        try
         {
-            // The Default presenter is freshly created — re-lock it and restore
-            // the saved view scale.
-            ConfigureFixedSize();
-            ApplyWindowScale(_windowScale, persist: false);
+            _fullscreen = !_fullscreen;
+            AppWindow.SetPresenter(_fullscreen
+                ? AppWindowPresenterKind.FullScreen
+                : AppWindowPresenterKind.Default);
+            FullscreenItem.IsChecked = _fullscreen;
+            if (!_fullscreen)
+            {
+                // The Default presenter is freshly created — re-lock it and restore
+                // the saved view scale.
+                ConfigureFixedSize();
+                ApplyWindowScale(_windowScale, persist: false);
+            }
+            // Pixel-perfect letterboxing only applies in fullscreen (windowed scales
+            // are already exact integer multiples).
+            ApplyIntegerScaling();
         }
-        // Pixel-perfect letterboxing only applies in fullscreen (windowed scales
-        // are already exact integer multiples).
-        ApplyIntegerScaling();
+        finally { _changingPresenter = false; }
     }
 
     // MARK: - Video filter (mirrors the macOS VideoFilter / scanline settings)
@@ -1939,6 +1975,8 @@ public sealed partial class MainWindow : Window
 
     private void OnClosed(object sender, WindowEventArgs e)
     {
+        AppWindow.Changed -= OnAppWindowChanged;
+        SaveSettings();
         _automationClosing = true;
         _automationServer?.Dispose();
         _automationServer = null;
