@@ -102,18 +102,6 @@ public sealed partial class MainWindow : Window
 
     // Per-drive mounted-disk state (bytes kept so images can be switched without
     // re-reading the file; mirrors macOS MountedDiskInfo for multi-image .d88).
-    private sealed class DriveSlot
-    {
-        public byte[]? Bytes;
-        public string FileName = "";       // display base name (no extension)
-        public string[] ImageNames = Array.Empty<string>();
-        public EmulatorHost.ImageInfo[] Images = Array.Empty<EmulatorHost.ImageInfo>();
-        public int ImageCount;
-        public int CurrentImage;
-        public bool WriteProtected;
-        public string? SourcePath;        // original file path (for save-state reconstruction)
-        public bool Occupied => Bytes != null;
-    }
     private readonly DriveSlot[] _drives = { new(), new() };
 
     // Status-bar state.
@@ -275,6 +263,7 @@ public sealed partial class MainWindow : Window
             _loop = new EmulationLoop(RunEmulationStep);
             _loop.SetFramesPerStep(_emulationSpeed);
             _loop.Start();
+            _ = ApplyAutomationSettingAsync();
         }
         catch (Exception ex)
         {
@@ -347,11 +336,11 @@ public sealed partial class MainWindow : Window
 
     // preserveRam: false for the first boot (cold), true for user-triggered
     // re-applies (Reset / boot mode / clock), matching the macOS reset paths.
-    private void ApplyBootConfig(bool preserveRam = false)
+    private void ApplyBootConfig(bool preserveRam = false, bool? clockOverride = null)
     {
         if (_host is null) return;
         var (dipSw1, dipSw2Base) = BootSelection();
-        _host.Configure(_clock8MHz, dipSw1, dipSw2Base, preserveRam, _extRamCards, _monitorType, _memoryWaitDip);
+        _host.Configure(clockOverride ?? _clock8MHz, dipSw1, dipSw2Base, preserveRam, _extRamCards, _monitorType, _memoryWaitDip);
         ModeLabel.Text = _bootModeIndex switch
         {
             1 => "N88-V1H",
@@ -359,7 +348,7 @@ public sealed partial class MainWindow : Window
             3 => "N-BASIC",
             _ => "N88-V2",
         };
-        ClockLabel.Text = _clock8MHz ? "8MHz" : "4MHz";
+        ClockLabel.Text = (clockOverride ?? _clock8MHz) ? "8MHz" : "4MHz";
 
         // New screen content makes the last OCR hash/boxes stale.
         _ocr.Reset();
@@ -585,9 +574,13 @@ public sealed partial class MainWindow : Window
     // MARK: - Emulator menu
 
     private void OnPauseResume(object sender, RoutedEventArgs e)
+        => SetEmulatorRunning(_paused);
+
+    private void SetEmulatorRunning(bool running)
     {
         if (_host is not { } host) return;
-        _paused = !_paused;
+        if (_paused == !running) return;
+        _paused = !running;
         // Stop joins by taking the host lock, so no tick is in flight once it
         // returns; Start resets the pacer so the pause isn't "caught up".
         if (_paused) _loop?.Stop(() => { lock (host.SyncRoot) { } });
@@ -617,7 +610,7 @@ public sealed partial class MainWindow : Window
 
     private void OnReset(object sender, RoutedEventArgs e)
     {
-        ApplyBootConfig(preserveRam: true);
+        ResetMachine();
         // Resetting while paused would otherwise freeze the display on the
         // instant-post-reset VRAM/CRTC state — garbage the boot ROM only clears
         // once the CPU runs. Mirrors macOS reset(), which forces the restart so
@@ -628,11 +621,9 @@ public sealed partial class MainWindow : Window
 
     private void OnBootMode(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement fe && int.TryParse(fe.Tag?.ToString(), out int idx))
+        if (sender is FrameworkElement fe && int.TryParse(fe.Tag?.ToString(), out int idx) && idx is >= 0 and <= 3)
         {
-            _bootModeIndex = idx;
-            SaveSettings();
-            ApplyBootConfig(preserveRam: true);
+            ResetMachine((EmulatorBootMode)idx);
         }
     }
 
@@ -644,8 +635,7 @@ public sealed partial class MainWindow : Window
             // Switching the CPU clock resets the machine, matching macOS (where
             // clock8MHz is applied through performReset, not as a live change).
             _clock8MHz = mhz == 8;
-            SaveSettings();
-            ApplyBootConfig(preserveRam: true);
+            ResetMachine();
         }
     }
 
@@ -701,9 +691,7 @@ public sealed partial class MainWindow : Window
             string name = System.IO.Path.GetFileName(path);
             int images = _host.ProbeDisk(bytes, out EmulatorHost.ImageInfo[] infos);
             if (images <= 0) { ShowError($"Failed to parse {name}"); return; }
-            FillSlot(_drives[drive], bytes, name, infos, 0, path);
-            _host.MountDisk(drive, bytes, 0);
-            AddRecent(path);
+            MountDiskExplicit(drive, bytes, name, infos, 0, path);
         }
         catch (Exception ex) { ShowError($"Mount failed: {ex.Message}"); }
     }
@@ -730,15 +718,11 @@ public sealed partial class MainWindow : Window
             if (index < 0) return;   // user cancelled
         }
 
-        FillSlot(_drives[drive], bytes, name, infos, index, sourcePath);
-        _host.MountDisk(drive, bytes, index);
+        MountDiskExplicit(drive, bytes, name, infos, index, sourcePath);
         // Mounting only inserts the disk — it does NOT reset the machine (matches
         // macOS mountDiskImage). The boot strap is re-evaluated on the next Reset,
         // so the user mounts a disk and then presses Reset to boot it.
 
-        if (sourcePath is not null) AddRecent(sourcePath);
-        RebuildDiskMenu();
-        UpdateDiskStatus();
     }
 
     /// Show the disk-image selection dialog for a multi-image .d88 (mirrors the
@@ -827,12 +811,10 @@ public sealed partial class MainWindow : Window
         int images = _host.ProbeDisk(bytes, out EmulatorHost.ImageInfo[] infos);
         if (images <= 0) { ShowError($"Failed to parse {name}"); return; }
 
-        FillSlot(_drives[0], bytes, name, infos, 0, path);
-        _host.MountDisk(0, bytes, 0);
+        MountDiskExplicit(0, bytes, name, infos, 0, path);
         if (images >= 2)
         {
-            FillSlot(_drives[1], bytes, name, infos, 1, path);
-            _host.MountDisk(1, bytes, 1);
+            MountDiskExplicit(1, bytes, name, infos, 1, path);
         }
         else
         {
@@ -848,17 +830,9 @@ public sealed partial class MainWindow : Window
 
     private static void FillSlot(DriveSlot slot, byte[] bytes, string name,
                                  EmulatorHost.ImageInfo[] infos, int current,
-                                 string? sourcePath = null)
+                                 string? sourcePath = null, bool writeProtected = false)
     {
-        string fileBase = System.IO.Path.GetFileNameWithoutExtension(name);
-        slot.Bytes = bytes;
-        slot.FileName = fileBase;
-        slot.Images = infos;
-        slot.ImageCount = infos.Length;
-        slot.ImageNames = ResolveImageNames(infos.Select(i => i.Name).ToArray(), fileBase, infos.Length);
-        slot.CurrentImage = current;
-        slot.WriteProtected = current >= 0 && current < infos.Length && infos[current].WriteProtected;
-        slot.SourcePath = sourcePath;
+        slot.Fill(bytes, name, infos, current, sourcePath, writeProtected);
     }
 
     /// <summary>
@@ -875,9 +849,12 @@ public sealed partial class MainWindow : Window
         // wipe the disk that's actually mounted. Switching is unavailable there.
         if (slot.Bytes is not { Length: > 0 }) return;
 
-        _host.MountDisk(drive, slot.Bytes!, index);
-        slot.CurrentImage = index;
-        slot.WriteProtected = index < slot.Images.Length && slot.Images[index].WriteProtected;
+        if (_host.MountDiskProtected(drive, slot.Bytes!, index, slot.Images[index].WriteProtected) <= 0)
+        {
+            ShowError("Cannot mount the disk image.");
+            return;
+        }
+        slot.SelectImage(index);
         RebuildDiskMenu();
         UpdateDiskStatus();
     }
@@ -906,17 +883,6 @@ public sealed partial class MainWindow : Window
     /// Resolve embedded image names, falling back to "<file> #<i>" for unnamed
     /// images (and bare "<file>" for a single-image disk). Mirrors macOS
     /// makeDirectDiskInfo.
-    private static string[] ResolveImageNames(string[] raw, string fileBase, int count)
-    {
-        var result = new string[count];
-        for (int i = 0; i < count; i++)
-        {
-            string n = i < raw.Length ? raw[i].Trim() : "";
-            result[i] = n.Length > 0 ? n : (count > 1 ? $"{fileBase} #{i}" : fileBase);
-        }
-        return result;
-    }
-
     // MARK: - Disk menu construction (mirrors the macOS Disk menu)
 
     private void RebuildDiskMenu()
@@ -1109,6 +1075,10 @@ public sealed partial class MainWindow : Window
     // window scale, boot mode, CPU clock, master volume).
     private sealed class AppSettings
     {
+        public bool AutomationEnabled { get; set; }
+        public int AutomationPort { get; set; } = 18801;
+        public string? AutomationToken { get; set; }
+        public string AutomationClient { get; set; } = "claudeCode";
         public int WindowScale { get; set; } = 2;
         public int BootModeIndex { get; set; }       // 0=N88-V2 1=V1H 2=V1S 3=N-BASIC
         public bool Clock8MHz { get; set; } = true;
@@ -1156,6 +1126,10 @@ public sealed partial class MainWindow : Window
             if (!File.Exists(SettingsPath)) return;
             var s = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsPath));
             if (s is null) return;
+            _automationEnabled = s.AutomationEnabled;
+            _automationPort = s.AutomationPort is >= 1024 and <= 65535 ? s.AutomationPort : 18801;
+            if (!string.IsNullOrWhiteSpace(s.AutomationToken)) _automationToken = s.AutomationToken;
+            _automationClient = s.AutomationClient;
             _windowScale = NormalizeScale(s.WindowScale);
             _bootModeIndex = Math.Clamp(s.BootModeIndex, 0, 3);
             _clock8MHz = s.Clock8MHz;
@@ -1204,6 +1178,10 @@ public sealed partial class MainWindow : Window
             if (dir is not null) Directory.CreateDirectory(dir);
             File.WriteAllText(SettingsPath, System.Text.Json.JsonSerializer.Serialize(new AppSettings
             {
+                AutomationEnabled = _automationEnabled,
+                AutomationPort = _automationPort,
+                AutomationToken = _automationToken,
+                AutomationClient = _automationClient,
                 WindowScale = _windowScale,
                 AutomaticUpdateCheck = _automaticUpdateCheck,
                 LastUpdateCheck = _lastUpdateCheck,
@@ -1568,49 +1546,31 @@ public sealed partial class MainWindow : Window
     private async void OnLoadStateSheet(object sender, RoutedEventArgs e) => await ShowSlotDialogAsync(save: false);
 
     // slot < 0 = quick save/load; 0..9 = numbered slots.
-    private async Task SaveToSlotAsync(int slot)
+    private Task SaveToSlotAsync(int slot)
     {
-        if (_host is null) return;
-        var (pixels, cw, ch) = CaptureFrame();   // filtered snapshot before any awaits
-        byte[] blob = _host.SaveState();
-        if (blob.Length == 0) { ShowToast("Save failed"); return; }
+        if (_host is null) return Task.CompletedTask;
         try
         {
             Directory.CreateDirectory(WinSaveState.Dir);
-            await File.WriteAllBytesAsync(WinSaveState.StatePath(slot), blob);
-            WinSaveState.WriteMeta(slot, BuildMeta());
-            try
-            {
-                await ImageCodec.WritePngAsync(pixels, cw, ch,
-                                               WinSaveState.ThumbPath(slot), 320, 200);
-            }
-            catch { /* thumbnail is cosmetic — ignore failures */ }
+            SaveStateFile(WinSaveState.StatePath(slot));
             ShowToast(slot < 0 ? "Quick saved" : $"Saved to slot {slot + 1}");
         }
         catch (Exception ex) { ShowError($"Save failed: {ex.Message}"); }
+        return Task.CompletedTask;
     }
 
-    private async Task LoadFromSlotAsync(int slot)
+    private Task LoadFromSlotAsync(int slot)
     {
-        if (_host is null) return;
-        if (!WinSaveState.Exists(slot)) { ShowToast("Save state not found"); return; }
-
-        byte[] blob;
-        try { blob = await File.ReadAllBytesAsync(WinSaveState.StatePath(slot)); }
-        catch (Exception ex) { ShowError($"Load failed: {ex.Message}"); return; }
-
-        // LoadState holds the host lock, so the emulation thread can't run a
-        // slice on a half-restored machine.
-        bool ok = _host.LoadState(blob);
-        if (!ok) { ShowToast("Load failed: corrupt or incompatible state"); return; }
-
-        ApplyLoadedMeta(WinSaveState.ReadMeta(slot));
-        // Show the restored screen now, even while paused (the loop would
-        // otherwise only publish it on its next frame).
-        PublishCurrentFrame();
-        ShowToast(slot < 0 ? "Quick loaded" : $"Loaded slot {slot + 1}");
+        if (_host is null) return Task.CompletedTask;
+        if (!WinSaveState.Exists(slot)) { ShowToast("Save state not found"); return Task.CompletedTask; }
+        try
+        {
+            LoadStateFile(WinSaveState.StatePath(slot));
+            ShowToast(slot < 0 ? "Quick loaded" : $"Loaded slot {slot + 1}");
+        }
+        catch (Exception ex) { ShowError($"Load failed: {ex.Message}"); }
+        return Task.CompletedTask;
     }
-
     private WinSaveMeta BuildMeta() => new()
     {
         BootModeIndex = _bootModeIndex,
@@ -1638,11 +1598,11 @@ public sealed partial class MainWindow : Window
 
     /// Re-sync host UI state (boot mode, clock, disk menu/labels) after a load.
     /// Does NOT reset the machine — the state is already restored in the core.
-    private void ApplyLoadedMeta(WinSaveMeta? meta)
+    private void ApplyLoadedMeta(WinSaveMeta? meta, bool persist = true)
     {
         if (meta is not null)
         {
-            _bootModeIndex = Math.Clamp(meta.BootModeIndex, 0, 3);
+            if (meta.BootModeIndex is >= 0 and <= 3) _bootModeIndex = meta.BootModeIndex;
             _clock8MHz = meta.Clock8MHz;
         }
         else
@@ -1673,7 +1633,7 @@ public sealed partial class MainWindow : Window
         (_clock8MHz ? Clock8 : Clock4).IsChecked = true;
         ModeLabel.Text = _bootModeIndex switch { 1 => "N88-V1H", 2 => "N88-V1S", 3 => "N-BASIC", _ => "N88-V2" };
         ClockLabel.Text = _clock8MHz ? "8MHz" : "4MHz";
-        SaveSettings();
+        if (persist) SaveSettings();
 
         // Keep the core's DIP switches consistent with the restored boot mode so a
         // later Reset behaves as the saved mode (the state omits DIP switches).
@@ -1764,15 +1724,26 @@ public sealed partial class MainWindow : Window
     private FrameworkElement MakeSlotCell(int slot, bool save)
     {
         bool exists = WinSaveState.Exists(slot);
+        var preview = exists ? WinSaveState.ReadPreview(slot) : default;
         var grid = new Grid { Width = 232, Height = 150 };
 
-        if (exists && File.Exists(WinSaveState.ThumbPath(slot)))
+        if (preview.Thumbnail is { } thumbnail)
         {
-            grid.Children.Add(new Image
+            var image = new Image { Stretch = Stretch.UniformToFill };
+            image.Loaded += async (_, _) =>
             {
-                Source = new BitmapImage(new Uri(WinSaveState.ThumbPath(slot))),
-                Stretch = Stretch.UniformToFill,
-            });
+                try
+                {
+                    using var stream = new InMemoryRandomAccessStream();
+                    await stream.WriteAsync(thumbnail.AsBuffer());
+                    stream.Seek(0);
+                    var bitmap = new BitmapImage();
+                    await bitmap.SetSourceAsync(stream);
+                    image.Source = bitmap;
+                }
+                catch { /* A missing preview must not prevent loading a state. */ }
+            };
+            grid.Children.Add(image);
         }
         else
         {
@@ -1787,7 +1758,7 @@ public sealed partial class MainWindow : Window
             });
         }
 
-        WinSaveMeta? meta = exists ? WinSaveState.ReadMeta(slot) : null;
+        WinSaveMeta? meta = preview.Metadata;
         string label = $"Slot {slot + 1}";
         if (exists)
         {
@@ -1968,6 +1939,15 @@ public sealed partial class MainWindow : Window
 
     private void OnClosed(object sender, WindowEventArgs e)
     {
+        _automationClosing = true;
+        _automationServer?.Dispose();
+        _automationServer = null;
+        if (_automationSession is { } session)
+        {
+            session.Cancel();
+            _ = session.DisposeAsync();
+            _automationSession = null;
+        }
         _aiDownloadCancellation?.Cancel();
         _aiDownloadPanel = null;
         CompositionTarget.Rendering -= OnRendering;

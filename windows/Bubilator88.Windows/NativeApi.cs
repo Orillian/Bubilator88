@@ -16,6 +16,40 @@ namespace Bubilator88.Windows;
 /// </summary>
 internal static unsafe partial class NativeApi
 {
+    // App-owned MCP sessions. Keep the delegate alive through session_destroy.
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate int McpMachineAction(IntPtr actionData);
+
+    [LibraryImport(Dll)]
+    public static partial int b88_mcp_session_handle(IntPtr session, byte* json, int length);
+
+    [LibraryImport(Dll)]
+    public static partial int b88_mcp_session_reply(IntPtr session, byte* output, int capacity);
+
+    [LibraryImport(Dll)]
+    public static partial void b88_mcp_session_destroy(IntPtr session);
+
+    [LibraryImport(Dll)]
+    public static partial int b88_disk_name(IntPtr handle, int drive, byte* output, int capacity);
+
+    [LibraryImport(Dll)]
+    public static partial int b88_is_write_protected(IntPtr handle, int drive);
+
+    [LibraryImport(Dll)]
+    public static partial int b88_encode_png(byte* pixels, int length, int width, int height, byte* output, int capacity);
+
+    [LibraryImport(Dll)]
+    public static partial int b88_save_state_ex(IntPtr handle, byte* thumbnail, int thumbnailLength, byte* extra, int extraLength);
+
+    [LibraryImport(Dll)]
+    public static partial int b88_state_section(byte* data, int length, uint tag, byte* output, int capacity);
+
+    [LibraryImport(Dll)]
+    public static partial void b88_release_all_keys(IntPtr handle);
+
+    [LibraryImport(Dll)]
+    public static partial int b88_mount_disk_protected(IntPtr handle, int drive, byte* data, int length, int imageIndex, int writeProtected);
+
     private const string Dll = "Bubilator88C";
 
     // ROM kind selectors for b88_load_rom.

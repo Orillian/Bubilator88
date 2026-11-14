@@ -383,6 +383,29 @@ Quality のダウンロード先は `models-v1/RealESRGAN_x2.onnx`。2026-09-24 
   メタに記録し、ロード時に復元する(記録の無い古いステートは 24kHz 扱い)。
 - **テスト基盤**: シェル純ロジックの xUnit プロジェクト。
 
+## AIツールからの操作（MCP）
+
+Settings → General → **AI Control (MCP)** の **Allow control from AI tools** を有効にする。
+既定の接続先は `http://127.0.0.1:18801/mcp`。ポートは変更可能。
+クライアントを選び、表示された登録コマンドまたは設定をコピーする。
+macOS版と同じ8種類の登録形式を用意し、コマンドはPowerShell用に1行で表示する。
+トークンは初回に生成し、ほかの設定と同じ `%LOCALAPPDATA%\Bubilator88\settings.json`
+に保存する。登録内容にはトークンが含まれる。
+
+MCPプロトコルとツールはCoreの共通実装を使う。Windows側はHTTP通信とアプリ操作を担当し、
+`b88_mcp_app_session_create` の型付きアプリ用ホストからCコールバックで呼ばれる。
+要求・応答のJSON-RPCをC#で解析・補正することはない。責務分担、スレッド境界、検証方法は
+[MCP.md](MCP.md) を参照。
+
+保存・復元・マウントは通常UIとMCPで同じアプリ操作を使う。セーブ状態はmacOS版と同じ
+`AMTA`／`THMB` 内蔵の単一 `.b88s` に統一し、原子的に置換する。旧Windows版の
+サイドカーファイルは読み込み互換を残す。
+
+**依存関係:** 型付きMCPセッションAPIを含むCore 1.11.0以降が必要。
+WindowsのCIと配布ビルドは、macOS版と同じ `Package.resolved` のCoreリビジョンを使用する。
+既存の `b88_mcp_handle` / `b88_mcp_reply`
+のシグネチャとヘッドレス動作は維持する。
+
 ## 未実装(後続 / 別実装枠)
 
 - **CPU オーバークロックの設定 UI**。C ABI (`b88_set_cpu_overclock`) と P/Invoke 宣言は
