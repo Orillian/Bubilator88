@@ -401,10 +401,9 @@ MCPプロトコルとツールはCoreの共通実装を使う。Windows側はHTT
 `AMTA`／`THMB` 内蔵の単一 `.b88s` に統一し、原子的に置換する。旧Windows版の
 サイドカーファイルは読み込み互換を残す。
 
-**開発中の依存関係:** この対応にはCore側の新しい型付きMCPセッションAPIが必要。
-現在の依存ピン1.10.0には含まれないため、ローカルでは変更済みの隣接CoreからDLLをビルドする。
-配布前にはCoreの変更をマージし、CoreのRelease Tagワークフローで新しいAPIを含むminor版を
-作成して、このリポジトリの依存ピンを更新する。既存の `b88_mcp_handle` / `b88_mcp_reply`
+**依存関係:** 型付きMCPセッションAPIを含むCore 1.11.0以降が必要。
+WindowsのCIと配布ビルドは、macOS版と同じ `Package.resolved` のCoreリビジョンを使用する。
+既存の `b88_mcp_handle` / `b88_mcp_reply`
 のシグネチャとヘッドレス動作は維持する。
 
 ## 未実装(後続 / 別実装枠)
