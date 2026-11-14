@@ -189,6 +189,8 @@ public sealed partial class MainWindow
         panel.Children.Add(Section("Updates", new FrameworkElement[] { updateToggle },
             "Looks for a newer release on GitHub at most once a day."));
 
+        panel.Children.Add(BuildAutomationSettings());
+
         return panel;
     }
 

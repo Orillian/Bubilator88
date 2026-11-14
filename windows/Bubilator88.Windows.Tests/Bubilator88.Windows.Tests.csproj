@@ -8,6 +8,7 @@
 
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -25,6 +26,19 @@
        assembly, so their `internal` members are reachable without
        InternalsVisibleTo. Add more linked files here as testable logic grows. -->
   <ItemGroup>
+    <Compile Include="..\Bubilator88.Windows\AutomationHTTPServer.cs" Link="Linked\AutomationHTTPServer.cs" />
+    <Compile Include="..\Bubilator88.Windows\AutomationSession.cs" Link="Linked\AutomationSession.cs" />
+    <Compile Include="..\Bubilator88.Windows\NativeApi.cs" Link="Linked\NativeApi.cs" />
+    <Compile Include="..\Bubilator88.Windows\NativeApi.Automation.cs" Link="Linked\NativeApi.Automation.cs" />
+    <Compile Include="..\Bubilator88.Windows\AppAutomationHost.cs" Link="Linked\AppAutomationHost.cs" />
+    <Compile Include="..\Bubilator88.Windows\AutomationUiDispatcher.cs" Link="Linked\AutomationUiDispatcher.cs" />
+    <Compile Include="..\Bubilator88.Windows\PausedMachineOperation.cs" Link="Linked\PausedMachineOperation.cs" />
+    <Compile Include="..\Bubilator88.Windows\AtomicStateFile.cs" Link="Linked\AtomicStateFile.cs" />
+    <Compile Include="..\Bubilator88.Windows\AppStateMetadata.cs" Link="Linked\AppStateMetadata.cs" />
+    <Compile Include="..\Bubilator88.Windows\WinSaveState.cs" Link="Linked\WinSaveState.cs" />
+    <Compile Include="..\Bubilator88.Windows\StateSections.cs" Link="Linked\StateSections.cs" />
+    <Compile Include="..\Bubilator88.Windows\EmulatorHost.Media.cs" Link="Linked\EmulatorHost.Media.cs" />
+    <Compile Include="..\Bubilator88.Windows\DriveSlot.cs" Link="Linked\DriveSlot.cs" />
     <Compile Include="..\Bubilator88.Windows\KeyMapping.cs" Link="Linked\KeyMapping.cs" />
     <Compile Include="..\Bubilator88.Windows\UpdateFeed.cs" Link="Linked\UpdateFeed.cs" />
     <Compile Include="..\Bubilator88.Windows\PixelMath.cs" Link="Linked\PixelMath.cs" />

@@ -1,15 +1,12 @@
 using System;
 using System.IO;
-using System.Text.Json;
 
 namespace Bubilator88.Windows;
 
 /// <summary>
-/// App-level metadata stored beside each save state (slot_N.meta.json /
-/// quicksave.meta.json), mirroring the macOS SaveMeta. The machine state itself
-/// (incl. mounted disk images) lives in the .b88s blob; this sidecar carries the
-/// host-side UI state needed to re-sync after a load: boot mode, clock, and the
-/// per-drive display info so the disk menu/labels can be reconstructed.
+/// Host-side state used by normal UI and automation commands. New files encode
+/// it using the macOS AMTA schema; the old Windows JSON shape is read only for
+/// backward compatibility with sidecars.
 /// </summary>
 internal sealed class WinSaveMeta
 {
@@ -43,9 +40,8 @@ internal sealed class WinSaveMeta
 }
 
 /// <summary>
-/// Resolves the on-disk layout of save states and reads their sidecar metadata.
-/// Layout matches macOS: %LOCALAPPDATA%\Bubilator88\SaveStates\ with, per entry,
-/// a .b88s machine blob, a .meta.json sidecar, and a .thumb.png 320×200 preview.
+/// Resolves save slots and reads embedded metadata/previews with legacy sidecar
+/// fallbacks. New writes use one .b88s file with AMTA and THMB, as on macOS.
 /// Slot −1 is the quick-save; slots 0..9 are the numbered save-state slots.
 /// </summary>
 internal static class WinSaveState
@@ -70,20 +66,14 @@ internal static class WinSaveState
         catch { return null; }
     }
 
-    public static WinSaveMeta? ReadMeta(int slot)
+    public static (WinSaveMeta? Metadata, byte[]? Thumbnail) ReadPreview(int slot)
     {
         try
         {
-            string p = MetaPath(slot);
-            if (!File.Exists(p)) return null;
-            return JsonSerializer.Deserialize<WinSaveMeta>(File.ReadAllText(p));
+            string path = StatePath(slot);
+            byte[] blob = File.ReadAllBytes(path);
+            return (StateSections.ReadMetadata(blob, path), StateSections.ReadThumbnail(blob, path));
         }
-        catch { return null; }
-    }
-
-    public static void WriteMeta(int slot, WinSaveMeta meta)
-    {
-        Directory.CreateDirectory(Dir);
-        File.WriteAllText(MetaPath(slot), JsonSerializer.Serialize(meta));
+        catch { return (null, null); }
     }
 }
