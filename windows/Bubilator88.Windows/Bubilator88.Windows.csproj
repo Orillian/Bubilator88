@@ -112,6 +112,15 @@
     </None>
   </ItemGroup>
 
+  <!-- The same substitute rhythm recordings as macOS. User 2608_*.WAV files
+       override these through the existing core WAV loader. -->
+  <ItemGroup>
+    <None Include="..\..\Bubilator88\Resources\Rhythm_*.wav">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <!-- Fast and Balanced are bundled. Quality is downloaded on demand into
        %LOCALAPPDATA%\Bubilator88\DownloadedModels. -->
   <ItemGroup>

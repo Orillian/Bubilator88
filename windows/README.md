@@ -62,6 +62,13 @@ source-of-truth と再生成は `../../models/PROVENANCE.md`。
 2. **Visual Studio 2022** + **Windows App SDK / .NET デスクトップ** ワークロード、**.NET 10 SDK**。
 3. **Git LFS**(`git lfs version` が通ること)。AI モデルが LFS 管理のため。
 4. ROM 一式を `%LOCALAPPDATA%\Bubilator88\` に配置(`N88.ROM` 必須、`DISK.ROM` 等は任意)。
+
+   `JISYO.ROM`（辞書ROM、512KB）も同じフォルダから読み込み、かな漢字変換に使用する。
+   `KANJI1.ROM` / `KANJI2.ROM` がない場合は、macOS版と同じ東雲フォント由来の
+   代替ROMを使用する。YM2608のリズム音もmacOS版と同じ6音を同梱し、
+   `2608_BD.WAV` / `2608_SD.WAV` / `2608_TOP.WAV` / `2608_HH.WAV` /
+   `2608_TOM.WAV` / `2608_RIM.WAV` を配置した音だけユーザーのサンプルを優先する。
+   WAVの解析と音源への投入は既存のコアC ABIが担当する。
    macOS の `~/Library/Application Support/Bubilator88/` と同じ顔ぶれ(`../docs/PERSISTENCE.md`)。
 
 ## チェックアウト
@@ -173,7 +180,8 @@ pwsh scripts\build-windows-package.ps1 -Version 1.2.3
 コア DLL をビルドし、Fast / Balanced モデル (Git LFS) を確認してから、次の2つを
 同じ Windows App SDK **2.5.1** で発行する。単一 EXE 版は .NET 10 を含み、
 共有ランタイム版は PC に導入された .NET 10 を使う。必要な Swift DLL は両方に
-同梱し、ROM と任意ダウンロードの Quality モデルは含まない。
+同梱し、実機由来のROMと任意ダウンロードの Quality モデルは含まない。
+代替漢字ROM（ライセンス文書を含む）と代替リズム音は両方の配布物に同梱する。
 
 | ZIP | 内容 | 利用者側の前提 |
 | --- | --- | --- |
@@ -195,7 +203,7 @@ EXE 自体を別名へ変えると起動に失敗しており、ZIP の名前変
 ランチャーと `app\` フォルダは一緒に移動できる。`Bubilator88C.dll` や
 `swiftCore.dll` は `app\` 内で EXE と同じフォルダに置いたままにする。
 ROM (`N88.ROM` 等) は従来どおり
-`%LOCALAPPDATA%\Bubilator88\` に配置する。配布物に ROM は含まない。
+`%LOCALAPPDATA%\Bubilator88\` に配置する。配布物に実機由来のROMは含まない。
 ランタイムが未導入の PC では起動できないのが共有版の仕様。
 
 開発用に共有版だけを作り直す場合:

@@ -88,22 +88,12 @@ internal sealed unsafe partial class EmulatorHost : IDisposable
         LoadRhythmSamples(romDir);
     }
 
-    // YM2608 rhythm WAV samples (fmgen format: signed 16-bit PCM). Without these
-    // the OPNA rhythm channels are silent. File order must match the core's
-    // index convention (0=BD 1=SD 2=TOP 3=HH 4=TOM 5=RIM). Mirrors macOS
-    // EmulatorViewModel+Disk.swift.
-    private static readonly string[] RhythmFiles =
-        { "2608_BD.WAV", "2608_SD.WAV", "2608_TOP.WAV", "2608_HH.WAV", "2608_TOM.WAV", "2608_RIM.WAV" };
-
     private void LoadRhythmSamples(string dir)
     {
-        for (int i = 0; i < RhythmFiles.Length; i++)
+        foreach (var (index, data) in RhythmSampleFiles.Load(dir))
         {
-            string path = Path.Combine(dir, RhythmFiles[i]);
-            if (!File.Exists(path)) continue;
-            byte[] data = File.ReadAllBytes(path);
             fixed (byte* p = data)
-                NativeApi.b88_load_rhythm_sample(_handle, i, p, data.Length);
+                NativeApi.b88_load_rhythm_sample(_handle, index, p, data.Length);
         }
     }
 

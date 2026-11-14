@@ -26,6 +26,12 @@
        assembly, so their `internal` members are reachable without
        InternalsVisibleTo. Add more linked files here as testable logic grows. -->
   <ItemGroup>
+    <Compile Include="..\Bubilator88.Windows\RhythmSampleFiles.cs" Link="Linked\RhythmSampleFiles.cs" />
+    <Compile Include="..\Bubilator88.Windows\DeploymentFiles.cs" Link="Linked\DeploymentFiles.cs" />
+    <None Include="..\..\Bubilator88\Resources\Rhythm_*.wav">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Compile Include="..\Bubilator88.Windows\AutomationHTTPServer.cs" Link="Linked\AutomationHTTPServer.cs" />
     <Compile Include="..\Bubilator88.Windows\AutomationSession.cs" Link="Linked\AutomationSession.cs" />
     <Compile Include="..\Bubilator88.Windows\NativeApi.cs" Link="Linked\NativeApi.cs" />
