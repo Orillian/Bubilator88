@@ -1,59 +1,99 @@
 # Bubilator88 — Windows ネイティブ版
 
-macOS 版と**同一の Swift エミュレーションコア**を Windows ネイティブ DLL 化し、
-C# + WinUI 3 のシェルから P/Invoke で駆動する移植版。描画は D3D11、音声は XAudio2、
-AI アップスケールは ONNX Runtime + DirectML。
+macOS 版と同じ Swift パッケージ **Bubilator88Core** を DLL 化し、C# + WinUI 3 から
+駆動する Windows 版です。描画は D3D11、音声は XAudio2、AI アップスケールは
+ONNX Runtime + DirectML を使用します。**コアを共有していても、アプリの機能は同一ではありません。**
 
-> 全体方針・移植性監査・実装進捗は `docs/develop/WINDOWS_PORT.md` を参照。
-> このファイルは**ビルドと実行の手順書**。
+## macOS 版との機能比較
+
+以下は **2026-11-14 時点のソースツリー**を比較したものです。公開済み ZIP の機能とは
+一致しない場合があります。「対応」は Windows の通常 UI から利用可能、「一部対応」は
+制限または操作方法の違いあり、「未対応」は通常 UI から利用できないことを示します。
+C ABI の公開や試作コードの存在だけでは対応済みとしていません。
+
+### 対応済み・一部対応
+
+| 機能 | Windows | 対応内容・macOS 版との差 |
+| --- | --- | --- |
+| エミュレーションコア | 対応 | CPU・映像・音源・FDC 等は共通コア。CI・配布は macOS と同じ `Package.resolved` の revision を使用 |
+| 起動モード・CPU クロック | 対応 | N88-BASIC V2 / V1H / V1S / N-BASIC、4 / 8 MHz、リセット、一時停止・再開 |
+| ハードウェア設定 | 対応 | 24 / 15 kHz モニタ、メモリウェイト DIP、拡張 RAM。次回リセットで反映 |
+| 代替 ROM・リズム音 | 対応 | 代替漢字 ROM・リズム音を共用。実機由来の ROM・WAV を優先。辞書 ROM も読込可能 |
+| D88 / D77 ディスク | 一部対応 | Drive 1 / 2 / 1&2、複数イメージの選択・切替、ライトプロテクト、最近使ったファイル。ファイルへの書き戻し・エクスポート等は下表参照 |
+| 画面フィルター | 対応 | None / Linear / Bicubic / CRT / xBRZ / Enhanced、スキャンライン。Metal の代わりに D3D11 を使用 |
+| AI アップスケール | 対応 | Fast / Balanced / Quality の 3 モデル。Fast・Balanced 同梱、Quality は確認後に任意ダウンロード。進捗・再試行・キャンセル・検証・削除に対応 |
+| 表示サイズ | 対応 | ×1 / ×2 / ×4、フルスクリーン、Fit / 整数 / 4:3 補正、ウィンドウ位置・倍率の保存 |
+| 通常音声・音量・バッファ調整 | 対応 | XAudio2、適応レート制御、等速時の音声サブフレーム化。エミュレーションと表示は別スレッド |
+| 疑似ステレオ・CD Mix | 対応 | CD Mix は出力音のローパス＋リバーブ。CD-ROM 対応とは別の機能 |
+| FDD アクセス音 | 対応 | シーク・リード音、ドライブ別定位、音量・専用出力デバイス選択、アクセスランプ |
+| 早送り | 一部対応 | ×1 / ×2 / ×4 / ×8 / ×16。Windows は ×8 以上でミュート、macOS は全段で倍速音声 |
+| キーボード入力 | 一部対応 | US / JIS・自動判定、矢印 / 数字列 / WASD のテンキー代用。特殊キー再割当等は下表参照 |
+| ゲームコントローラー | 一部対応 | ボタン・トリガー・スティック、PC-88 キーへの割当変更と初期化。ホストコマンドは既定割当で利用。機種別設定・振動は未対応 |
+| チート | 対応 | 88PAR `.pat` の取込、macOS と共通のプリセット、グループ別 ON / OFF、ディスク別の設定保存 |
+| セーブステート | 対応 | クイック＋10 スロット、サムネイル・メタ情報。macOS と同じ単一 `.b88s`（AMTA / THMB 内蔵）。旧 Windows サイドカーも読込可能 |
+| スクリーンショット | 対応 | PNG / JPEG / HEIC、自動保存・保存先選択、画面画像のクリップボードコピー（Ctrl+Shift+C） |
+| AI ツールからの操作（MCP） | 対応 | ローカル HTTP・トークン認証・設定・8 種類のクライアント登録形式。プロトコルとツール実行は共通コア。下記参照 |
+| 更新確認 | 対応 | 起動時・手動の確認、後で通知・バージョンのスキップ。Windows 用 `win-v*` リリースを案内し、導入は手動 |
+| 起動引数 | 一部対応 | 既存の `.d88` / `.d77` パスを 1 件受け取り起動時にマウント。macOS の URL スキーム・QUASI88 互換オプションには未対応 |
+
+### macOS 版にあり、Windows の通常 UI では未対応の機能
+
+| 機能 | macOS 版 | Windows の現状 |
+| --- | --- | --- |
+| ディスクの永続化・管理 | ディスクキャッシュ、書き戻し、空ディスク作成、キャッシュのエクスポート | 元の D88 / D77 への書き戻しや管理 UI なし。ディスクの変更内容を残すにはセーブステートを保存する |
+| ZIP 内のディスク読込 | ZIP 内のディスクを選択・マウント | ファイル選択は D88 / D77 のみ。事前に展開が必要 |
+| テープ | ファイルを開く、自動起動、巻戻し、取出し、履歴 | Tape メニューなし。共通コア・C ABI の対応と Windows UI の対応は別 |
+| PC-8001 メモリイメージ | `.n80` 読込 | 読込 UI なし（C ABI は公開済み） |
+| PC-8801MC CD-ROM | `.cue` / `.ccd` の読込・取出し・履歴 | CD メニューなし（C ABI は公開済み） |
+| CPU オーバークロック | Develop メニューで ×1 / ×2 / ×4 を設定 | 設定 UI なし。`b88_set_cpu_overclock` の宣言はあるが通常実行は ×1。Emulation Speed の早送りとは別 |
+| 巻戻し（Rewind） | 過去のスナップショットへ戻る | スナップショットの自動蓄積・巻戻し操作なし |
+| 終了時の状態から再開 | Resume where you left off | 自動保存・次回起動時の自動復元なし。手動のクイック保存・読込を使用 |
+| バックグラウンド動作設定 | 実行継続・音声の可否を個別設定 | 設定なし。最小化中は停止 |
+| 録音・録画 | 音声録音、音声付き動画記録 | 保存 UI・記録処理なし。スクリーンショットは対応 |
+| 空間オーディオ | チャンネルの 3D 配置、ヘッドトラッキング | 通常音声・疑似ステレオ・CD Mix のみ |
+| マウス入力 | PC-8872 バスマウス、マウスによるジョイスティック代用、感度・捕捉解除 | ホストマウスの相対移動・ボタンをエミュレーターへ送る配線なし |
+| 操作領域 | 画面上の領域にキー操作を割当 | 領域の編集・クリック・コントローラーでの操作なし |
+| ソフトウェアキーボード | PC-88 キー配列の別ウィンドウ | 表示 UI なし |
+| 特殊キー再割当・ローマ字かな入力 | 特殊キーのカスタマイズ、ローマ字からかな入力 | 固定のキーマッピング・テンキー代用のみ |
+| テキストのコピー＆ペースト | 画面文字をコピー、文字列を擬似キー入力 | 通常 UI に文字列のコピー・貼付操作なし。Ctrl+Shift+C は画像コピー |
+| コントローラーの機種別設定・振動 | モデル別マッピング、ブランド別アイコン、SSG 効果音連動の触覚フィードバック | 全機種共通のマッピング。振動出力なし |
+| OCR・翻訳オーバーレイ | Apple Vision OCR＋Translation | OCR は試作コードのみで UI から無効化。翻訳バックエンドは未実装 |
+| テキストを除外したスキャンライン | テキスト画素の減光を除外 | D3D11 シェーダー未対応。スキャンライン自体は使用可能 |
+| 操作スクリプトの実行・記録 UI | スクリプト実行・記録 | アプリの操作 UI なし。共通コアの MCP ツールとは区別する |
+| 開発・デバッグ用ウィンドウ | Develop メニューの各種検査 UI | 対応するウィンドウなし。MCP のデバッグツールは利用可能 |
+| OS との統合 | Finder の Quick Look・サムネイル、ファイルを開く操作、`bubilator88://` | Explorer 用プレビュー・サムネイル拡張、ファイル関連付け・URL 登録の配布処理なし |
+| リセット時の演出 | ディゾルブアニメーションの ON / OFF | 設定・描画処理なし |
+| UI のローカライズ | String Catalog による多言語 UI | Windows UI は英語文字列で実装 |
+
+OCR の試作は `Ocr/` とフレームループに残っていますが、PC-8801 の小さい文字に対する
+認識精度が不十分なため、View メニュー・Ctrl+T の入口を設けていません。
+コードの存在を理由に翻訳機能が利用できるとは扱わないでください。
+
+比較元は macOS の `Bubilator88/App/Commands/`・`Bubilator88/Views/Settings/` と、
+Windows の `MainWindow.xaml`・`MainWindow.*.cs`・`EmulatorHost*.cs`・`App.xaml.cs` です。
+内部の移植方針・調査記録は `docs/develop/WINDOWS_PORT.md`（非公開サブモジュール）にあります。
+この README だけで対応状況とビルド・配布手順を確認できます。
 
 ## 構成
 
-```
-windows/Bubilator88.Windows/
-├── NativeApi.cs              P/Invoke (Bubilator88C.dll の @_cdecl と 1:1)
-├── EmulatorHost.cs           native ハンドル管理 + 再利用バッファ (毎フレーム alloc ゼロ)。全呼び出しを SyncRoot で排他
-├── EmulationLoop.cs          エミュレーション専用スレッド + 高分解能タイマのペーサ (macOS の EmulationLoop 相当)
-├── FramePublisher.cs         完成フレームをエミュスレッド → UI スレッドへ渡す 3 スロット (macOS と同じ)
-├── KeyMapping.cs             VirtualKey → PC-8801 15行マトリクス (US/JIS + テンキー擬似)
-├── D3DScreen.cs              D3D11 + SwapChainPanel。フィルタ + スキャンライン + レターボックス
-├── AiUpscaler.cs             ONNX Runtime + DirectML で AI x2 (3モデル切替、非同期ダブルバッファ)
-├── AIModelStore.cs           Quality モデルの任意ダウンロード・検証・保存
-├── PixelMath.cs              無依存の画素演算ヘルパ (単体テスト対象)
-├── XAudioSink.cs             XAudio2 で 44.1kHz ステレオ float をストリーム (適応レート制御)
-├── ImageCodec.cs             スクリーンショット PNG/JPEG/HEIC エンコード
-├── WinSaveState.cs           セーブステート/メタ/サムネイルのファイル入出力
-├── MainWindow.xaml(.cs)      UI + フレームループ (エミュ側 tick と UI 側の表示) + 入力/ディスク/メニュー
-├── MainWindow.SettingsDialog.cs  設定ダイアログ (General/Display/Audio/Keyboard)
-├── App.xaml(.cs)
-├── Assets/
-│   └── AppIcon.ico            ← exe リソース (ApplicationIcon) + タイトルバー/タスクバー用
-└── native/
-    └── Bubilator88C.dll      ← swift build 成果物を手動配置 (git 管理外)
+| 場所 | 役割 |
+| --- | --- |
+| `Bubilator88.Windows/NativeApi*.cs` | 共通コアの C ABI に対応する P/Invoke 宣言 |
+| `EmulatorHost*.cs` / `EmulationLoop.cs` / `FramePublisher.cs` | コアの排他・メディア操作、専用実行スレッド、3 スロットのフレーム受渡し |
+| `MainWindow.xaml` / `MainWindow.*.cs` | メニュー、設定、入力、メディア、保存、MCP、更新確認 |
+| `D3DScreen.cs` / `AiUpscaler.cs` / `AIModelStore.cs` | D3D11 描画、AI 推論、モデルのダウンロード・検証・保存 |
+| `XAudioSink.cs` / `FddSound.cs` | 通常音声・FDD 音の再生 |
+| `KeyMapping.cs` / `GameController/` | キーボード・ゲームコントローラー入力 |
+| `WinSaveState.cs` / `StateSections.cs` / `AtomicStateFile.cs` | ステートの保存・メタ情報・サムネイル・原子的置換 |
+| `Automation*.cs` / `AppAutomationHost.cs` | MCP の通信・セッション・アプリ操作の橋渡し（[詳細](MCP.md)） |
+| `Bubilator88.Windows/native/` | ビルドした `Bubilator88C.dll` の配置先（git 管理外） |
+| `Bubilator88.Windows.Tests/` | UI 非依存のロジック・HTTP・ネイティブ連携の xUnit テスト |
+| `Bubilator88.Launcher/` | 共有ランタイム配布版の起動用ランチャー |
 
-windows/Bubilator88.Windows.Tests/   シェルの純ロジック xUnit テスト (KeyMapping / PixelMath / FramePublisher など)
-
-Fast / Balanced の 2 モデルは `../../models/onnx/` から出力直下へコピーする。
-Quality (`RealESRGAN_x2.onnx`) は初回選択時に確認してからダウンロードし、
-`%LOCALAPPDATA%\Bubilator88\DownloadedModels\` に保存する。
-source-of-truth と再生成は `../../models/PROVENANCE.md`。
-```
-
-コアは別リポジトリ [bubio/Bubilator88Core](https://github.com/bubio/Bubilator88Core)。
-このリポジトリと同じ階層に clone しておく (後述)。C ABI シムはその
-`Sources/CApi/` 以下のファイル。複数ファイルに分かれており、`b88_*` 関数を
-探すときは全体を grep する。
-
-| ファイル | 内容 |
-|---|---|
-| `CApi.swift` | ハンドル管理、リセット・実行、描画、音声、基本設定、ステートの入出力 |
-| `CApiMachine.swift` | 設定の読み戻し (`b88_get_*`)、音声ステム、入力、画面テキスト |
-| `CApiMedia.swift` | テープ、ディスクの書き戻し、メモリイメージ、ステートファイル、チートファイル |
-| `CApiTyping.swift` | テキスト貼り付け、テープ自動起動、`.n80` ロード |
-| `CApiCDROM.swift` | PC-8801MC の CD-ROM ドライブ |
-
-どれも `@_cdecl` 関数は `public` にし、新しい関数は既存の関数に近いファイルへ足す
-(下記の ABI ルール)。
+上表でディレクトリを省略した `.cs` は `Bubilator88.Windows/` 内です。
+コアは別リポジトリ [bubio/Bubilator88Core](https://github.com/bubio/Bubilator88Core) の
+`Sources/CApi/` にあり、`b88_*` 関数は複数の Swift ファイルに分かれています。
+開発規約は [AGENTS.md](AGENTS.md) と[ルートの AGENTS.md](../AGENTS.md) を参照。
 
 ## 前提ツール
 
@@ -69,7 +109,7 @@ source-of-truth と再生成は `../../models/PROVENANCE.md`。
    `2608_BD.WAV` / `2608_SD.WAV` / `2608_TOP.WAV` / `2608_HH.WAV` /
    `2608_TOM.WAV` / `2608_RIM.WAV` を配置した音だけユーザーのサンプルを優先する。
    WAVの解析と音源への投入は既存のコアC ABIが担当する。
-   macOS の `~/Library/Application Support/Bubilator88/` と同じ顔ぶれ(`../docs/PERSISTENCE.md`)。
+   macOS の `~/Library/Application Support/Bubilator88/` と同じ顔ぶれ（内部資料: `docs/develop/PERSISTENCE.md`）。
 
 ## チェックアウト
 
@@ -80,6 +120,8 @@ git clone git@github.com:bubio/Bubilator88Core.git   # コア。Bubilator88 と�
 cd Bubilator88
 git lfs pull               # 同梱する Fast / Balanced モデルの実体を取得
 ```
+
+以降、コア DLL の手動ビルド以外のコマンドはリポジトリ直下から実行する。
 
 コアの置き場所を変えたときは `BUBILATOR88_CORE_DIR` に設定する
 (`scripts/build-windows-package.ps1` が見る)。
@@ -99,14 +141,15 @@ git lfs pull               # 同梱する Fast / Balanced モデルの実体を�
 ```powershell
 cd ..\Bubilator88Core     # このリポジトリの隣に clone したコア
 swift build -c release --product Bubilator88C -Xswiftc -enforce-exclusivity=unchecked
-# 成果物 (例): .build\release\Bubilator88C.dll を shell の native\ にコピー
+# 配置先を作成し、成果物をコピー
+New-Item -ItemType Directory -Force ..\Bubilator88\windows\Bubilator88.Windows\native | Out-Null
 Copy-Item .build\release\Bubilator88C.dll ..\Bubilator88\windows\Bubilator88.Windows\native\
 ```
 
 まずコア健全性を確認(macOS と同じ結果になるはず):
 
 ```powershell
-swift test -Xswiftc -enforce-exclusivity=unchecked  # 760+ ユニットテスト
+swift test -Xswiftc -enforce-exclusivity=unchecked  # コアのユニットテスト
 swift run BootTester "C:\path\game.d88"     # テキストVRAMダンプ等
 ```
 
@@ -114,6 +157,8 @@ swift run BootTester "C:\path\game.d88"     # テキストVRAMダンプ等
 > `Sources/CApi/` の `@_cdecl` 関数は必ず `public` にすること
 > (付け忘れてもビルドは通り、P/Invoke が実行時に失敗する)。コアの CI が DLL の
 > 書き出し表と `@_cdecl` の一覧を突き合わせている。
+
+コアの確認後は `cd ..\Bubilator88` でリポジトリ直下に戻る。
 
 ### 2. AI モデル (ONNX) を用意 — 任意
 
@@ -130,21 +175,21 @@ python scripts\convert_realesrgan_onnx.py     # RealESRGAN_x2plus.pth を自動D
   max|diff| < 0.003)。入出力は float[0,1] RGB CHW、正規化(/255)と RGBA8 化はホスト
   (`AiUpscaler.cs`)が行う。
 - Fast/Balanced(SRVGGNet)は公開重みが無いため `.pth`・`.onnx` とも LFS 必須。詳細と
-  再生成手順は `..\..\models\PROVENANCE.md`(Balanced はコンパイル済 `.mlmodelc` から復元)。
+  再生成手順は [models/PROVENANCE.md](../models/PROVENANCE.md) を参照（Balanced はコンパイル済 `.mlmodelc` から復元）。
 - csproj は Fast / Balanced の 2 モデルだけを出力直下へコピーする。Quality は
   `models-v1` の ONNX asset から任意ダウンロードする。いずれも未準備なら Bicubic フォールバック。
 
 ### 3. シェルをビルド & 実行
 
 ```powershell
-cd windows\Bubilator88.Windows
-dotnet run -c Release -r win-x64
+# リポジトリ直下で実行
+dotnet run --project windows\Bubilator88.Windows -c Release -r win-x64
 ```
 
 > **ランタイム依存**: `Bubilator88C.dll` は Swift ランタイム DLL(`swiftCore.dll` 等)に依存する。
 > 開発機では `...\Swift\Runtimes\6.3.2\usr\bin` が PATH 上なので `dotnet run` で解決するが、
 > 単体配布する場合は同 bin の DLL 群を exe の隣に同梱する必要がある(手動 `dotnet run` では
-> 未同梱のまま。配布パッケージは §5 の `build-windows-package.ps1` が自動でバンドルする)。
+> 未同梱のまま。配布パッケージは後述の `build-windows-package.ps1` が自動でバンドルする)。
 >
 > **DLL 配置**: `None Include="native\..."` を `<Link>Bubilator88C.dll</Link>` で**出力直下**に
 > 置かないと P/Invoke が `ERROR_MOD_NOT_FOUND (0x8007007E)` で落ちる(native\ サブフォルダは
@@ -168,10 +213,10 @@ dotnet test windows\Bubilator88.Windows.Tests\Bubilator88.Windows.Tests.csproj
 
 > self-contained な WinUI exe を ProjectReference するとテストホストに WinUI ランタイムが
 > 載って失敗するため、テストプロジェクトは UI 非依存の純ロジックファイル
-> (`KeyMapping.cs` / `PixelMath.cs`)を**ソースリンク**してヘッドレスに検証する。
+> （`KeyMapping.cs` / `PixelMath.cs` / `AutomationHTTPServer.cs` 等）を**ソースリンク**してヘッドレスに検証する。
 > 対象を増やすときは `.csproj` の `<Compile Include=…>` に純ロジックファイルを足す。
 
-### 5. 配布パッケージ (zip) をビルド
+## 配布パッケージ
 
 ```powershell
 pwsh scripts\build-windows-package.ps1 -Version 1.2.3
@@ -229,168 +274,6 @@ SHA-256 の算出も行う。`-Variant SingleFile` または `-Variant SharedRun
 起動スモークテスト前には CI が Windows App SDK 2.5.1 ランタイムと .NET 10 SDK
 （.NET 10 ランタイムを含む）を導入する。
 
-2026-09-24 のローカル検証では、単一 EXE ZIP が **138.8 MiB**、共有ランタイム ZIP が
-**53.9 MiB**。後者は前者より **84.9 MiB** 小さい (.NET 10 を同梱していた旧共有版は
-87.9 MiB)。共有版の `Bubilator88.runtimeconfig.json` は `Microsoft.NETCore.App` 10
-だけを要求するので、通常の .NET Runtime 10 (x64) で足りる。
-単一 EXE は Swift を PATH から外して
-起動し、展開先のコア DLL・Swift DLL・Fast モデル・アイコンの存在を確認した。
-共有ランタイム版も公式ランタイム導入後に Swift を PATH から外して起動し、
-`Microsoft.UI.Xaml.dll` を共有の `WindowsApps` ディレクトリから、コアと Swift DLL を
-配布フォルダからロードすることを確認した。AI 推論・ディスク操作等の操作回帰は
-この発行テストには含まない。
-
-#### 配布物のスリム化 (§6 / §6b)
-
-共有ランタイム版のファイル数とサイズを抑えるため、スクリプトは 2 段階で削る。
-単一 EXE 版では Swift DLL の依存クロージャだけを発行前に取り込み、展開が必要な
-Windows App SDK のファイルは EXE に内包する:
-
-1. **Swift ランタイムは依存クロージャのみ** — `Runtimes\...\usr\bin\*.dll` を全部
-   コピーせず、`Bubilator88C.dll` の PE インポートテーブルを `llvm-objdump -p`
-   (Swift toolchain 同梱) で再帰的に辿り、実際に静的依存する DLL だけを入れる
-   (32 個 → 17 個)。`FoundationNetworking` / `FoundationXML` / `swiftDistributed`
-   などは Bubilator88Core が import していないので落ちる。
-2. **未使用ファイルの prune** — デバッグシンボル (`*.pdb`、`DirectML.pdb` だけで
-   8.6MB)、未使用の WindowsAppSDK 機能 (WebView2 / Widgets / 通知 / MSIX 配置)、
-   英語以外の `*.mui` ロケールフォルダ (84 個) を削除する。self-contained な
-   WindowsAppSDK には機能単位の on/off スイッチが無いため、発行後に削るしかない。
-   削除リストは `build-windows-package.ps1` の `$pruneFiles` に理由付きで並べて
-   あるので、WindowsAppSDK / .NET を上げたときはここを再監査すること。
-
-   WinRT のクラスは**実際に使う瞬間**に初めて DLL がロードされる (遅延活性化)
-   ため、消しすぎても起動スモークテストでは捕まらない — 例えば WebView2 で
-   ヘルプ画面を出す機能を後から足すと、ビルドも起動も通るのに「その画面を
-   開いた瞬間だけ落ちる」。そこで WindowsAppSDK 機能の削除には**使用箇所ガード**
-   (`$guardedPruneGroups`) を付けてある。シェルの `*.cs` / `*.xaml` を grep し、
-   その機能のキーワード (`WebView2` / `AppNotification` / `Microsoft.Windows.Widgets`
-   など) が 1 つでも見つかれば prune を取りやめ、警告を出す:
-
-   ```
-   WARNING: WebView2 を使い始めた形跡があるため prune しません
-            (.\windows\Bubilator88.Windows\HelpWindow.xaml.cs:42)。
-   ```
-
-   安全側 (= 同梱する) に倒れるので、機能追加時に気づかず壊れることはない。
-
-削りすぎていないかは §7 のスモークテスト(実際に exe を起動してメインウィンドウが
-出るまで確認する)が検出する。旧 1.6 系フォルダ版の測定では
-**414 エントリ / 353MB → 287 エントリ / 324MB** (zip は 181MB → 165MB)。
-現行の共有版は Windows App SDK 自体を同梱しない。
-
-> **旧フォルダ版では `WinUIEdit.dll` (3.4MB) をあえて残していた**。`TextBox` / `RichEditBox` を使った
-> 瞬間に遅延ロードされる DLL で、現状 XAML・コードとも `TextBox` 系は未使用だが、
-> UI を足した途端に落ちる類の削除なのでサイズ以上にリスクが大きい。
-
-#### 単一 EXE 配布の検証 (Windows App SDK 1.6 → 2.5.1)
-
-現在のリリーススクリプトは **Windows App SDK 2.5.1** で単一 EXE 版と共有ランタイム版を作る。
-以下の 1.6 系の失敗は当時の検証結果であり、SDK 全般の制約ではない。
-
-##### 1.6 系での失敗
-
-`PublishSingleFile=true` でのビルド自体は通り、160MB 程度の単一 exe が生成される
-(WindowsAppSDK も `Microsoft.WindowsAppSDK.SingleFile.targets` で明示的にサポート
-している)。**しかし、1.6 系では unpackaged + self-contained の構成で起動しなかった**:
-
-```
-System.Runtime.InteropServices.COMException (0x80040111): ClassFactory は要求されたクラスを提供できません
-   at WinRT.ActivationFactory.Get(String typeName, Guid iid)
-   at Microsoft.UI.Xaml.Application.Start(...)
-```
-
-当時の調査では WinUI3 の**登録不要 (reg-free) WinRT 活性化**が原因と推定した。`obj\...\Manifests\app.manifest`
-に 1808 個の `<winrtv1:activatableClass>` が生成され、それぞれ
-`<asmv3:file name="Microsoft.ui.xaml.dll">` のような**ファイル名だけ**の参照になっている。
-SxS のアクティベーションコンテキストはこれを **exe があるディレクトリ**基準で解決する
-仕様で、single-file では実体が `%TEMP%\.net\<app>\<hash>\` に展開されるため見つからない。
-`MICROSOFT_WINDOWSAPPRUNTIME_BASE_DIRECTORY` (SDK の自動初期化子が
-`AppContext.BaseDirectory` を入れる) を展開先に向け直しても SxS 側の解決には効かない。
-逆に、展開先ディレクトリへ exe をコピーして起動すると正常に動作する
-(= DLL の中身ではなく exe の置き場所だけが問題であることの裏付け)。
-
-前提条件 (`EnableMsixTooling` / `WindowsPackageType=None` /
-`IncludeAllContentForSelfExtract` / `WindowsAppSdkUndockedRegFreeWinRTInitialize`) は
-すべて満たした上での結果だった。
-
-##### 2.5.1 での再検証 (2026-09-24、Windows 11 / win-x64)
-
-ソースを独立した検証用ディレクトリへコピーし、Windows App SDK を `2.5.1` に固定。
-`PublishSingleFile=true`、`IncludeAllContentForSelfExtract=true`、`SelfContained=true` を
-追加して `dotnet publish -c Release -r win-x64` を実行した。既存の
-`WindowsPackageType=None`、`WindowsAppSDKSelfContained=true`、`EnableMsixTooling=true`
-は維持。**単一 EXE の発行と起動は成功した**。Swift toolchain のランタイムを PATH から
-外した状態で `Bubilator88` のメインウィンドウが開き、Swift コア DLL・`swiftCore.dll`・
-D3D11 のロードと、コアの実行ログを確認した。1.6 系の `0x80040111` は再現しなかった。
-
-ただし、最初の発行ではウィンドウだけが開き、Swift コアはロードされなかった。
-現行スクリプトは `dotnet publish` **後**に Swift ランタイム DLL をコピーするため、
-単一 EXE には入らない。検証では、現行フォルダ配布物に含まれる Swift 依存 DLL 17 個を
-発行 **前**に `Content` として出力直下へ組み込んで解消した。モデル 3 個も EXE に含まれ、
-起動時の展開先に存在することを確認した。
-
-当時、単一ファイル版をリリースするには、次の対応と検証が必要だった:
-
-- `AiUpscaler.cs` のモデル探索と `MainWindow.xaml.cs` のタイトルバーアイコン探索は
-  `AppContext.BaseDirectory` (EXE の場所) を見るが、モデルと `Assets/AppIcon.ico` は
-  `%TEMP%\.net\Bubilator88.Windows\<hash>\` に展開される。展開先を参照できるようにし、
-  AI フィルタ 3 種とアイコン表示を実操作で確認する。
-- EXE を別名へ変更すると起動直後に `0xC000027B` で終了した。配布時の名前変更を避ける
-  だけでなく、ダウンロード時の自動改名も想定して対処または配布方法を決める。
-  同様の報告: <https://github.com/microsoft/WindowsAppSDK/issues/6248>。
-- ディスク操作、音声、設定、セーブ状態、AI 推論は未検証。単一ファイル起動時の展開と
-  遅延ロードを含めて回帰確認する。
-
-検証用 EXE は **416.7 MiB**、それだけを ZIP 圧縮すると **198.1 MiB**。現行の
-prune 済みフォルダ版 ZIP (**165 MB**) とは SDK バージョンと削減処理が異なるため、
-単純なサイズ比較はできないが、単一ファイル化は容量削減策ではない。公式手順も
-依存ファイルを初回起動時に一時ディレクトリへ展開する方式としている:
-<https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/unpackage-winui-app#single-file-exe>。
-この検証用のソースと発行物は削除済み。現行の 2.5.1 対応については上の §5 を参照。
-
-## 実装済み機能
-
-- **コア**: Swift→DLL を P/Invoke。`runFrame`/`render_rgba`/キー入力/ディスクマウント。挙動精度は macOS と同一。
-- **映像**: D3D11。None/Linear/Bicubic/CRT/xBRZ/Enhanced/**AI (Fast/Balanced/Quality)** の
-  フィルタ + スキャンライン。ウィンドウ ×1/×2/×4(固定・永続)、フルスクリーン(整数スケーリング切替)、レターボックス。
-- **AI アップスケール**: ONNX Runtime + DirectML で 3 モデル(Fast=SRVGGNet_x2_lite /
-  Balanced=SRVGGNet_x2 / Quality=RealESRGAN_x2)を切替(640×400→1280×800)。Fast / Balanced は同梱。
-  Quality は初回選択時に確認、ダウンロード進捗、再試行・キャンセルを表示。サイズと SHA-256 を
-  検証してから保存し、設定画面で削除できる。保存済みフィルターのモデルが起動時に欠けていれば
-  None に戻す。未準備時は Bicubic フォールバック。
-
-Quality のダウンロード先は `models-v1/RealESRGAN_x2.onnx`。2026-09-24 に公開し、
-公開 URL から取得したファイルのサイズと SHA-256 がマニフェストと一致することを確認した。
-ファイルは 67,072,862 bytes、SHA-256
-`74786f9a2680d8c887f51c74131b2233d0f8910c5e5307e1beee71f69a88a4f0`。
-- **音声**: XAudio2 リングバッファ + 適応レート制御。**音声サブフレーム化**(Emulation Speed
-  x1 時、1フレームを `b88_run_frame_slice` で4スライスに分割し、スライス毎に音声を drain。
-  1バーストが ~16.7ms → ~4.5ms に縮み、短めのバッファ設定でのアンダーラン耐性が向上。
-  macOS の音声サブフレーム化 (`bubio/Bubilator88#193`) に対応。x2〜x16 の早送りは従来通り
-  フレーム一括実行)。フレームループはコアの `b88_frame_rate`(CRTC とモニタ種別から決まる
-  実機のフレームレート。24kHz・25行で 55.42Hz)で毎フレームペースを取り直す — 60Hz 固定で
-  回すと CPU も YM2608 タイマーも約 8% 速くなる。**2 スレッド構成**(macOS と同じ): エミュレーションは
-  専用スレッド (EmulationLoop) が自前のペーサで回し、UI スレッドの CompositionTarget.Rendering は
-  完成フレーム (FramePublisher) を表示するだけ。メニューやダイアログで UI が詰まっても音と進行が止まらない。
-  最小化中は停止する。早送りの音は x2/x4 は N 倍速(音程も上がる)で
-  鳴らし、x8 以上はミュート(macOS 版は全段 N 倍速のまま)。YM2608 リズム音源サンプル読込。音量・バッファ長設定。
-  擬似ステレオと **CD Mix**(出力段のローパス + ステレオリバーブ、既定 OFF。`b88_set_cd_mix`)。
-  **FDD アクセス音**(シーク/リード音を合成、ドライブ別ステレオ定位、ステータスバーの赤アクセスランプ)は
-  メイン音声とは別の専用 XAudio2 エンジンで再生し、出力デバイスを個別に選択可能
-  (`NAudio.CoreAudioApi.MMDeviceEnumerator` でデバイス列挙、macOS の `fddSoundDeviceUID` と同じ設計)。
-- **ディスク**: マルチイメージ D88、Drive 1/2/1&2、ライトプロテクト、Recent Files、イメージ選択ダイアログ。
-- **入力**: VirtualKey→マトリクス(US/JIS 記号、矢印/数字行/WASD のテンキー擬似)、
-  メニューのキーボードショートカット(Ctrl+R/P/S/L、Ctrl+Shift+C、Ctrl+1/2/3、F11)。
-  **ゲームコントローラ**(`Windows.Gaming.Input.Gamepad` ポーリング、Dpad/ABXY/ショルダー/
-  トリガー/スティックをPC-88キーまたはホストコマンドにマッピング、設定ダイアログの
-  Controller タブで「キーを押してバインド」/デフォルト復帰が可能)。
-- **状態保存**: セーブステート(スロット/クイック、メタ・サムネイル)、スクリーンショット(PNG/JPEG/HEIC)、Emulation Speed(×1〜×16)。
-- **設定**: General/Display/Audio/Keyboard/Controller タブ(`settings.json` に即時永続化)。
-  General タブの Hardware Configuration でモニタ種別 (24kHz/15kHz)・メモリウェイト DIP・
-  拡張 RAM を選択(いずれも次回リセットで反映)。モニタ種別は macOS と同様にセーブステートの
-  メタに記録し、ロード時に復元する(記録の無い古いステートは 24kHz 扱い)。
-- **テスト基盤**: シェル純ロジックの xUnit プロジェクト。
-
 ## AIツールからの操作（MCP）
 
 Settings → General → **AI Control (MCP)** の **Allow control from AI tools** を有効にする。
@@ -414,27 +297,20 @@ WindowsのCIと配布ビルドは、macOS版と同じ `Package.resolved` のCore
 既存の `b88_mcp_handle` / `b88_mcp_reply`
 のシグネチャとヘッドレス動作は維持する。
 
-## 未実装(後続 / 別実装枠)
+MCP では共通コアが提供する画面・テキスト・メモリの確認、入力、デバッグ、記録等の
+ツールも使えるため、通常メニューの未対応一覧と MCP のツール一覧は一致しません。
+MCP が使えることは、Windows に対応する設定画面や録画・スクリプト UI があることを意味しません。
 
-- **CPU オーバークロックの設定 UI**。C ABI (`b88_set_cpu_overclock`) と P/Invoke 宣言は
-  あるが、設定画面から選べない。常に ×1 で動く。
-- 触覚フィードバック(SSGノイズ検出→振動。Bubilator88Core の CApi 拡張が必要なため別PRで対応予定)
-- コントローラーのモデル別マッピング / ブランド別アイコン表示(`Windows.Gaming.Input.Gamepad` は
-  製品識別情報を提供しないため、v1 は単一のグローバルマッピング)
-- マウスロック(`ClipCursor` + RAWINPUT 相対デルタ)
-- **OCR 翻訳オーバーレイ**(`windows/Bubilator88.Windows/Ocr/`)。`Windows.Media.Ocr` で
-  実装・実機検証したが、**PC-8801 の小さいフォント(640×400 中 8px 相当)に対する認識率が
-  実用に耐えないほど低く**(4倍アップスケール+反転+アンシャープマスクのチューニングを行っても
-  ほとんど文字を検出できない)、UI から意図的に隠蔽(マスク)している——View メニュー項目・
-  Ctrl+T ショートカットともに存在しない。パイプライン自体(`OcrManager`/`ImagePreprocessor`/
-  `OcrTypes`)と `MainWindow` 側の配線(`_ocr` フィールド、フレームループでの `Tick`/
-  `TryTakeResult` 呼び出し、`OcrOverlayCanvas`)はコードとして残しているため、認識精度の
-  問題(モデル/前処理/`Windows.Media.Ocr` 自体の限界)を解決できる見込みが立った場合は、
-  メニュー項目とショートカットキーを再度追加するだけで再有効化できる。翻訳バックエンドは
-  そもそも未着手(検出精度がこの状態のため着手を見送り)。
-- スキャンラインのテキスト除外(macOS は `renderTextOverlay(markTextPixels:)` が
-  テキスト画素を alpha 0xFE でタグ付けし、ディスプレイシェーダがそこだけスキャンライン
-  の減光を免除する。D3D11 シェーダ側が未対応のため `CApi` からは `false` を渡している)
-- 空間オーディオ / ヘッドトラッキング、操作スクリプト記録
-- PC-8001 メモリイメージ(`.n80`)の読み込み(C ABI は公開済み、C# 側は未実装)
-- PC-8801MC の CD-ROM ドライブと CD イメージ(`.cue` / `.ccd`)(C ABI は公開済み、C# 側は未実装)
+## 保存先と注意点
+
+| 保存するもの | 場所 |
+| --- | --- |
+| 実機 ROM・任意のリズム WAV | `%LOCALAPPDATA%\Bubilator88\` |
+| 設定・MCP トークン | `%LOCALAPPDATA%\Bubilator88\settings.json` |
+| セーブステート | `%LOCALAPPDATA%\Bubilator88\SaveStates\` |
+| ダウンロードした Quality モデル | `%LOCALAPPDATA%\Bubilator88\DownloadedModels\` |
+| スクリーンショット | 既定は Windows の「ピクチャ」。Settings → General で変更可能 |
+
+ディスク内で行った保存を元のイメージファイルへ書き戻す機能はありません。
+終了前にクイック保存またはスロット保存を行ってください。
+配布サイズの測定や旧 SDK の起動問題の調査記録は [PACKAGING_NOTES.md](PACKAGING_NOTES.md) にまとめています。

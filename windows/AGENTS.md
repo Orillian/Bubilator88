@@ -28,7 +28,8 @@ Rules:
   broke and which commit did it; fixing it can wait for the next Windows release.
 
 `ci-windows.yml` runs on `main` pushes and PRs that change the core pin
-(`Package.resolved`), `windows/**` or `models/onnx/**` — the only places that
-can break Windows. `release-windows.yml` builds the distributable on
+(`Package.resolved`), `windows/**`, `models/onnx/**`, the shared core checkout
+action, the packaging script or the CI workflow itself. See the workflow for
+the exact path filters. `release-windows.yml` builds the distributable on
 `win-v*` tags, independent of the macOS release. Details and the current parity
 gaps: `windows/README.md`, `docs/develop/WINDOWS_PORT.md`.

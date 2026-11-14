@@ -1,9 +1,9 @@
 # AGENTS.md
 
 This file provides guidance to AI coding agents (Codex, Claude Code, etc.) when
-working with code in this repository. It is the canonical source — other
-agent-specific files (e.g. `CLAUDE.md`) point back here rather than
-duplicating content.
+working with code in this repository. It is the canonical source for
+repository-wide instructions.
+Windows-specific additions live in `windows/AGENTS.md`.
 
 ## Project Overview
 
@@ -12,8 +12,8 @@ as a macOS-native SwiftUI application. It reproduces externally observable
 hardware behavior for commercial software compatibility — it does NOT simulate
 at the transistor, gate, or LSI level.
 
-Platform: macOS only. Deployment targets are **not** uniform: the app target is
-26.0, the project and test targets are 26.2, and the core's `Package.swift`
+The primary app targets macOS; `windows/` contains the native Windows shell.
+macOS deployment targets are **not** uniform: the app target is 26.0, the project and test targets are 26.2, and the core's `Package.swift`
 declares `.macOS(.v15)`.
 
 ## Build, Test & Lint
@@ -174,7 +174,7 @@ Updating these docs:
 `windows/` holds a C# + WinUI 3 shell that drives the same Bubilator88Core
 through a C ABI DLL (`Sources/CApi/` in the core, built as the `Bubilator88C`
 product). The shell's own rules, CI triggers and parity gaps live in
-`windows/CLAUDE.md`, which loads when working under `windows/`. Two rules
+`windows/AGENTS.md`, which loads when working under `windows/`. Two rules
 belong here because they apply to the core, which is a separate clone:
 
 - **The C ABI is additive-only.** Do not change the signature or semantics of
