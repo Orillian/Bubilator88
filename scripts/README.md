@@ -22,6 +22,7 @@
 | `ql_thumbnail_check.swift` | Finder と同じ API で Quick Look のサムネイルを要求し、拡張が描いたかアイコンかを表示 (macOS 27 の `qlmanage -t` はアプリの拡張で止まる) |
 | `vm_release_check.sh` | リリース DMG をまっさらな macOS 仮想マシン (Tart) に入れ、拡張の署名・登録、`.d88` の既定アプリ、Quick Look サムネイルを確認 |
 | `rom_sweep.py` | D88 を一括起動し、起動失敗 (黒画面・BASIC プロンプト等) を分類 |
+| `make_blank_disk_templates.py` / `blank_disk_templates.swift` | ピン留めした共通コアから Windows 用の空 D88 テンプレートを生成・検証（`--check`） |
 | `d88_inspect.py` | D88 のヘッダ・トラック・セクタ構成を表示し、形式の破綻を列挙 (イメージ破損とエミュレータのバグの切り分け) |
 | `pbios_check.py` | 回帰シナリオを代替 BIOS (pbios) で走らせ、到達画面を比較 |
 | `substitute_kanji_check.py` | 回帰シナリオを同梱の代替漢字 ROM で走らせ、実 ROM の参照画面と比較 |

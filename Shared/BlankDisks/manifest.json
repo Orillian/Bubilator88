@@ -1,0 +1,30 @@
+{
+  "core_revision": "de585718dafabaa8e089cee2febabc39aa0a47ae",
+  "core_version": "1.11.0",
+  "images": {
+    "2D-basic.d88": {
+      "size": 348848,
+      "sha256": "0756d95d40fe26eab503966baddf5b4f88daf48a5d8932ac198d093a2de5ca8e"
+    },
+    "2D-erased.d88": {
+      "size": 348848,
+      "sha256": "8cc348244b3c30739bb5c1018ed301295d41fca4cb962a7d52ab5699107feb91"
+    },
+    "2DD-basic.d88": {
+      "size": 697008,
+      "sha256": "16003ce747eb2025c2a64ba0a31bc6689d382c52abf627cb97e3f3754340419b"
+    },
+    "2DD-erased.d88": {
+      "size": 697008,
+      "sha256": "892e167af105190ab2dba3b0f71ea4566006849605f3f1890cffa88d067ec36e"
+    },
+    "2HD-basic.d88": {
+      "size": 1089776,
+      "sha256": "0b7d031d390493f8d8e5af5a687a69190b7a06da6cac91db6bb90dbeb695dd95"
+    },
+    "2HD-erased.d88": {
+      "size": 1089776,
+      "sha256": "3cc1a57300b262835b90319590d701775e1d27f7d633b05ad09de7ddea890424"
+    }
+  }
+}

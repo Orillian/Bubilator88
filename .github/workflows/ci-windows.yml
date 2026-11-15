@@ -27,6 +27,9 @@ on:
       - '.github/actions/checkout-core/**'
       - 'windows/**'
       - 'models/onnx/**'
+      - 'Shared/BlankDisks/**'
+      - 'scripts/make_blank_disk_templates.py'
+      - 'scripts/blank_disk_templates.swift'
       - 'scripts/build-windows-package.ps1'
       - '.github/workflows/ci-windows.yml'
   pull_request:
@@ -35,6 +38,9 @@ on:
       - '.github/actions/checkout-core/**'
       - 'windows/**'
       - 'models/onnx/**'
+      - 'Shared/BlankDisks/**'
+      - 'scripts/make_blank_disk_templates.py'
+      - 'scripts/blank_disk_templates.swift'
       - 'scripts/build-windows-package.ps1'
       - '.github/workflows/ci-windows.yml'
   workflow_dispatch:
@@ -78,6 +84,10 @@ jobs:
         run: |
           swift --version
           dotnet --version
+
+      - name: Verify blank disk templates against the pinned core
+        shell: pwsh
+        run: python scripts/make_blank_disk_templates.py --check
 
       - name: Install Windows App SDK 2.5.1 runtime
         shell: pwsh

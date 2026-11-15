@@ -26,6 +26,13 @@
        assembly, so their `internal` members are reachable without
        InternalsVisibleTo. Add more linked files here as testable logic grows. -->
   <ItemGroup>
+    <Compile Include="..\Bubilator88.Windows\BlankDiskCreation.cs" Link="Linked\BlankDiskCreation.cs" />
+    <EmbeddedResource Include="..\..\Shared\BlankDisks\*.d88.gz;..\..\Shared\BlankDisks\manifest.json">
+      <LogicalName>Bubilator88.BlankDisks.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\Bubilator88.xcodeproj\project.xcworkspace\xcshareddata\swiftpm\Package.resolved">
+      <LogicalName>Bubilator88.BlankDisks.Package.resolved</LogicalName>
+    </EmbeddedResource>
     <Compile Include="..\Bubilator88.Windows\DiskWriteBackIO.cs" Link="Linked\DiskWriteBackIO.cs" />
     <Compile Include="..\Bubilator88.Windows\DiskWriteBack.cs" Link="Linked\DiskWriteBack.cs" />
     <Compile Include="..\Bubilator88.Windows\WindowPosition.cs" Link="Linked\WindowPosition.cs" />

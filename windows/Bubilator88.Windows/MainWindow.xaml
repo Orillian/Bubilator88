@@ -57,6 +57,9 @@
                 <MenuFlyoutSeparator />
                 <MenuFlyoutSubItem x:Name="BothSub" Text="Drive 1&amp;2" />
                 <MenuFlyoutSeparator />
+                <MenuFlyoutItem Text="Create Blank Disk…" Click="OnCreateBlankDisk"
+                                KeyboardAcceleratorTextOverride="Ctrl+Shift+N" />
+                <MenuFlyoutSeparator />
                 <MenuFlyoutSubItem x:Name="RecentSub" Text="Recent Files" />
             </muxc:MenuBarItem>
 

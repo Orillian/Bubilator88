@@ -46,6 +46,25 @@ namespace Bubilator88.Windows.Tests
         static NativeMediaTests() => NativeMcpLibrary.Initialize();
 
         [NativeMcpFact]
+        public void BlankDisk_AllFormats_CanMountSaveRestoreAndWriteBackWithCore()
+        {
+            foreach (var type in new[] { BlankDiskType.TwoD, BlankDiskType.TwoDD, BlankDiskType.TwoHD })
+            foreach (bool basic in new[] { false, true })
+            {
+                using var host = new EmulatorHost();
+                byte[] image = BlankDiskCreation.CreateImage(type, "SAVE", basic);
+                Assert.Equal(1, host.ProbeDisk(image, out var images));
+                Assert.Equal("SAVE", Assert.Single(images).Name);
+                Assert.Equal(type switch { BlankDiskType.TwoD => "2D", BlankDiskType.TwoDD => "2DD", _ => "2HD" }, images[0].Type);
+                Assert.Equal(1, host.MountDisk(0, image));
+                Assert.False(host.IsWriteProtected(0));
+                Assert.True(host.LoadState(host.SaveState()));
+                host.MarkDiskDirty(0);
+                Assert.Equal(image, host.TakeDirtyDisk(0));
+            }
+        }
+
+        [NativeMcpFact]
         public void DirtyDiskSnapshot_AtomicTakeAndRetry_PreservesSelectedBank()
         {
             using var host = new EmulatorHost();

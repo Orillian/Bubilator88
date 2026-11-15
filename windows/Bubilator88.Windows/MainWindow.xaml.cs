@@ -1958,6 +1958,12 @@ public sealed partial class MainWindow : Window
 
         if (!KeyHeld(VkControl)) return false;
 
+        if (key == VirtualKey.N && KeyHeld(0x10)) // VK_SHIFT
+        {
+            _ = CreateBlankDiskAsync();
+            return true;
+        }
+
         switch (key)
         {
             case VirtualKey.R: OnReset(this, EmptyArgs); return true;
