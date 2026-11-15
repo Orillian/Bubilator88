@@ -26,6 +26,8 @@
        assembly, so their `internal` members are reachable without
        InternalsVisibleTo. Add more linked files here as testable logic grows. -->
   <ItemGroup>
+    <Compile Include="..\Bubilator88.Windows\DiskWriteBackIO.cs" Link="Linked\DiskWriteBackIO.cs" />
+    <Compile Include="..\Bubilator88.Windows\DiskWriteBack.cs" Link="Linked\DiskWriteBack.cs" />
     <Compile Include="..\Bubilator88.Windows\WindowPosition.cs" Link="Linked\WindowPosition.cs" />
     <Compile Include="..\Bubilator88.Windows\RhythmSampleFiles.cs" Link="Linked\RhythmSampleFiles.cs" />
     <Compile Include="..\Bubilator88.Windows\DeploymentFiles.cs" Link="Linked\DeploymentFiles.cs" />

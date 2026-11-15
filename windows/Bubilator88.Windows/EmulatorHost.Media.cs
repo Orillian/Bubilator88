@@ -5,8 +5,51 @@ namespace Bubilator88.Windows;
 
 /// <summary>Native media transactions, isolated from rendering/audio services so
 /// the same implementation can be exercised against the real Core DLL.</summary>
-internal sealed unsafe partial class EmulatorHost
+internal sealed unsafe partial class EmulatorHost : IDiskWriteBackMachine
 {
+    public void WithDiskLock(Action action)
+    {
+        lock (SyncRoot)
+        {
+            ObjectDisposedException.ThrowIf(_handle == IntPtr.Zero, this);
+            action();
+        }
+    }
+
+    public int TakeDiskWritten()
+    {
+        lock (SyncRoot) return NativeApi.b88_take_disk_written(_handle);
+    }
+
+    /// <summary>Snapshots and clears dirty state atomically with copying the shared native blob.
+    /// A new sector write after this lock is released stays dirty for the next flush.</summary>
+    public byte[]? TakeDirtyDisk(int drive)
+    {
+        lock (SyncRoot)
+        {
+            int length = NativeApi.b88_take_dirty_disk(_handle, drive);
+            if (length <= 0) return null;
+            try
+            {
+                var bytes = new byte[length];
+                fixed (byte* output = bytes)
+                    if (NativeApi.b88_take_dirty_disk_read(_handle, output, length) != length)
+                        throw new IOException("Cannot copy the modified disk image.");
+                return bytes;
+            }
+            catch
+            {
+                NativeApi.b88_mark_disk_dirty(_handle, drive);
+                throw;
+            }
+        }
+    }
+
+    public void MarkDiskDirty(int drive)
+    {
+        lock (SyncRoot) NativeApi.b88_mark_disk_dirty(_handle, drive);
+    }
+
     /// <summary>Mount a D88 image. Returns image count in the blob.</summary>
     public int MountDisk(int drive, byte[] d88, int imageIndex = 0)
     {

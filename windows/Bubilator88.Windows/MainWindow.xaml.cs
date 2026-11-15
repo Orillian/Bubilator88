@@ -153,6 +153,7 @@ public sealed partial class MainWindow : Window
         RestoreWindowPosition();
         _windowPosition = new WindowPosition(AppWindow.Position.X, AppWindow.Position.Y);
         AppWindow.Changed += OnAppWindowChanged;
+        AppWindow.Closing += OnAppWindowClosing;
 
         Root.Loaded += OnLoaded;
         Closed += OnClosed;
@@ -208,6 +209,7 @@ public sealed partial class MainWindow : Window
         {
             _host = new EmulatorHost();
             _host.LoadRoms();
+            StartDiskWriteBack();
             _host.AudioBufferMs = _audioBufferMs;   // adaptive-rate target latency
             _host.SetPseudoStereo(_pseudoStereo);
             _host.SetCdMix(_cdMix);
@@ -281,6 +283,7 @@ public sealed partial class MainWindow : Window
             // first: it must have exited before the host is destroyed.
             _loop?.Dispose();
             _loop = null;
+            _diskWriteBackTimer?.Stop();
             CompositionTarget.Rendering -= OnRendering;
             _fddSound?.Dispose();
             _audio?.Dispose();
@@ -727,7 +730,7 @@ public sealed partial class MainWindow : Window
             if (index < 0) return;   // user cancelled
         }
 
-        MountDiskExplicit(drive, bytes, name, infos, index, sourcePath);
+        DiskOperation(() => MountDiskExplicit(drive, bytes, name, infos, index, sourcePath));
         // Mounting only inserts the disk — it does NOT reset the machine (matches
         // macOS mountDiskImage). The boot strap is re-evaluated on the next Reset,
         // so the user mounts a disk and then presses Reset to boot it.
@@ -820,21 +823,18 @@ public sealed partial class MainWindow : Window
         int images = _host.ProbeDisk(bytes, out EmulatorHost.ImageInfo[] infos);
         if (images <= 0) { ShowError($"Failed to parse {name}"); return; }
 
-        MountDiskExplicit(0, bytes, name, infos, 0, path);
-        if (images >= 2)
+        DiskOperation(() => DiskTransaction(3, () =>
         {
-            MountDiskExplicit(1, bytes, name, infos, 1, path);
-        }
-        else
-        {
-            _host.EjectDisk(1);
-            _drives[1] = new DriveSlot();
-        }
-        // Insert only — no reset (matches macOS). Press Reset to boot the set.
+            MountDiskExplicit(0, bytes, name, infos, 0, path);
+            if (images >= 2) MountDiskExplicit(1, bytes, name, infos, 1, path);
+            else EjectDrive(1);
+            // Insert only — no reset (matches macOS). Press Reset to boot the set.
 
-        AddRecent(path);
-        RebuildDiskMenu();
-        UpdateDiskStatus();
+            AddRecent(path);
+            RebuildDiskMenu();
+            UpdateDiskStatus();
+            return true;
+        }));
     }
 
     private static void FillSlot(DriveSlot slot, byte[] bytes, string name,
@@ -858,25 +858,31 @@ public sealed partial class MainWindow : Window
         // wipe the disk that's actually mounted. Switching is unavailable there.
         if (slot.Bytes is not { Length: > 0 }) return;
 
-        if (_host.MountDiskProtected(drive, slot.Bytes!, index, slot.Images[index].WriteProtected) <= 0)
+        DiskOperation(() => DiskTransaction(1 << drive, () =>
         {
-            ShowError("Cannot mount the disk image.");
-            return;
-        }
-        slot.SelectImage(index);
-        RebuildDiskMenu();
-        UpdateDiskStatus();
+            if (_host.MountDiskProtected(drive, slot.Bytes!, index, slot.Images[index].WriteProtected) <= 0)
+                throw new InvalidDataException("Cannot mount the disk image.");
+            slot.SelectImage(index);
+            RebuildDiskMenu();
+            UpdateDiskStatus();
+            return true;
+        }));
     }
 
-    private void OnEjectDrive0(object sender, RoutedEventArgs e) => EjectDrive(0);
-    private void OnEjectDrive1(object sender, RoutedEventArgs e) => EjectDrive(1);
+    private void OnEjectDrive0(object sender, RoutedEventArgs e) => DiskOperation(() => EjectDrive(0));
+    private void OnEjectDrive1(object sender, RoutedEventArgs e) => DiskOperation(() => EjectDrive(1));
 
     private void EjectDrive(int drive)
     {
-        _host?.EjectDisk(drive);
-        _drives[drive] = new DriveSlot();
-        RebuildDiskMenu();
-        UpdateDiskStatus();
+        if (_host is null) return;
+        DiskTransaction(1 << drive, () =>
+        {
+            _host.EjectDisk(drive);
+            _drives[drive] = new DriveSlot();
+            RebuildDiskMenu();
+            UpdateDiskStatus();
+            return true;
+        });
     }
 
     private void ToggleWriteProtect(int drive)
@@ -973,7 +979,8 @@ public sealed partial class MainWindow : Window
             Text = "Eject",
             IsEnabled = _drives[0].Occupied || _drives[1].Occupied,
         };
-        eject.Click += (_, _) => { EjectDrive(0); EjectDrive(1); };
+        eject.Click += (_, _) => DiskOperation(() => DiskTransaction(3, () =>
+        { EjectDrive(0); EjectDrive(1); return true; }));
         BothSub.Items.Add(eject);
     }
 
@@ -1975,6 +1982,8 @@ public sealed partial class MainWindow : Window
 
     private void OnClosed(object sender, WindowEventArgs e)
     {
+        AppWindow.Closing -= OnAppWindowClosing;
+        _diskWriteBackTimer?.Stop();
         AppWindow.Changed -= OnAppWindowChanged;
         SaveSettings();
         _automationClosing = true;

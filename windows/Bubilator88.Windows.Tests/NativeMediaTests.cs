@@ -46,6 +46,52 @@ namespace Bubilator88.Windows.Tests
         static NativeMediaTests() => NativeMcpLibrary.Initialize();
 
         [NativeMcpFact]
+        public void DirtyDiskSnapshot_AtomicTakeAndRetry_PreservesSelectedBank()
+        {
+            using var host = new EmulatorHost();
+            byte[] first = new byte[0x2b0];
+            byte[] second = new byte[0x2b0];
+            first[0] = (byte)'A';
+            second[0] = (byte)'B';
+            BinaryPrimitives.WriteInt32LittleEndian(first.AsSpan(0x1c), first.Length);
+            BinaryPrimitives.WriteInt32LittleEndian(second.AsSpan(0x1c), second.Length);
+            byte[] multi = new byte[first.Length + second.Length];
+            first.CopyTo(multi, 0);
+            second.CopyTo(multi, first.Length);
+            Assert.Equal(2, host.MountDisk(0, multi, 1));
+            Assert.Null(host.TakeDirtyDisk(0));
+            host.MarkDiskDirty(0);
+            byte[] snapshot = Assert.IsType<byte[]>(host.TakeDirtyDisk(0));
+            Assert.Equal(second, snapshot);
+            Assert.Null(host.TakeDirtyDisk(0));
+            host.MarkDiskDirty(0);
+            Assert.Equal(snapshot, host.TakeDirtyDisk(0));
+            Assert.Equal(0, host.TakeDiskWritten());
+        }
+
+        [NativeMcpFact]
+        public async Task DirtyDiskSnapshot_ConcurrentDrives_DoNotExchangeSharedNativeBlobs()
+        {
+            using var host = new EmulatorHost();
+            byte[][] banks = { new byte[0x2b0], new byte[0x2b0] };
+            for (int drive = 0; drive < 2; drive++)
+            {
+                banks[drive][0] = (byte)('A' + drive);
+                BinaryPrimitives.WriteInt32LittleEndian(banks[drive].AsSpan(0x1c), banks[drive].Length);
+                Assert.Equal(1, host.MountDisk(drive, banks[drive]));
+            }
+            Task Snapshot(int drive) => Task.Run(() =>
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    host.MarkDiskDirty(drive);
+                    Assert.Equal(banks[drive], host.TakeDirtyDisk(drive));
+                }
+            });
+            await Task.WhenAll(Snapshot(0), Snapshot(1));
+        }
+
+        [NativeMcpFact]
         public async Task ProtectedMount_ConcurrentObserversNeverSeeWritableDisk()
         {
             using var host = new EmulatorHost();

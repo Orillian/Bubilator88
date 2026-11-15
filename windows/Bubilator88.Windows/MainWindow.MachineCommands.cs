@@ -44,14 +44,25 @@ public sealed partial class MainWindow : IEmulatorAppCommands
         int imageIndex, string? sourcePath, bool writeProtected = false)
     {
         if (imageIndex < 0 || imageIndex >= images.Length) throw new ArgumentOutOfRangeException(nameof(imageIndex));
-        bool protect = images[imageIndex].WriteProtected || writeProtected;
-        if (_host!.MountDiskProtected(drive, bytes, imageIndex, protect) <= 0)
-            throw new InvalidDataException("Cannot mount the disk image.");
-        FillSlot(_drives[drive], bytes, name, images, imageIndex, sourcePath, writeProtected: protect);
-        if (sourcePath is not null) AddRecent(sourcePath);
-        RebuildDiskMenu();
-        UpdateDiskStatus();
-        return images[imageIndex].Name;
+        return DiskTransaction(1 << drive, () =>
+        {
+            // The picker may have read this file before the outgoing disk was flushed.
+            // Re-read after flushing the outgoing disk; a sibling drive keeps its own debounce.
+            if (sourcePath is not null)
+            {
+                bytes = File.ReadAllBytes(sourcePath);
+                if (_host!.ProbeDisk(bytes, out images) <= imageIndex)
+                    throw new InvalidDataException("Cannot find the selected disk image.");
+            }
+            bool protect = images[imageIndex].WriteProtected || writeProtected;
+            if (_host!.MountDiskProtected(drive, bytes, imageIndex, protect) <= 0)
+                throw new InvalidDataException("Cannot mount the disk image.");
+            FillSlot(_drives[drive], bytes, name, images, imageIndex, sourcePath, writeProtected: protect);
+            if (sourcePath is not null) AddRecent(sourcePath);
+            RebuildDiskMenu();
+            UpdateDiskStatus();
+            return images[imageIndex].Name;
+        });
     }
 
     private void SaveStateFile(string path)
@@ -79,7 +90,7 @@ public sealed partial class MainWindow : IEmulatorAppCommands
         var metadata = StateSections.ReadMetadata(blob, path);
         PausedOperation.Run(() =>
         {
-            host.WithMachine(() =>
+            DiskTransaction(3, () =>
             {
                 if (!host.LoadState(blob)) throw new InvalidDataException("Corrupt or incompatible save state.");
                 _controller.ReleaseAll(host);

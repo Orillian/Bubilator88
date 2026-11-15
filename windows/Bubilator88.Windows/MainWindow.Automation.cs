@@ -45,7 +45,7 @@ public sealed partial class MainWindow
                 (beforeEach, token) => host.InvokeMachineAction(() =>
                 {
                     token.ThrowIfCancellationRequested();
-                    if (_loop is null || _loop.ShouldRun || !beforeEach()) return 0;
+                    if (_automationClosing || _loop is null || _loop.ShouldRun || !beforeEach()) return 0;
                     host.RunFrame();
                     host.DiscardAudio();
                     _sliceIndex = 0;

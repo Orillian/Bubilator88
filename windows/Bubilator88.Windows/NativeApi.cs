@@ -36,6 +36,18 @@ internal static unsafe partial class NativeApi
     public static partial int b88_is_write_protected(IntPtr handle, int drive);
 
     [LibraryImport(Dll)]
+    public static partial int b88_take_disk_written(IntPtr handle);
+
+    [LibraryImport(Dll)]
+    public static partial int b88_take_dirty_disk(IntPtr handle, int drive);
+
+    [LibraryImport(Dll)]
+    public static partial int b88_take_dirty_disk_read(IntPtr handle, byte* output, int capacity);
+
+    [LibraryImport(Dll)]
+    public static partial void b88_mark_disk_dirty(IntPtr handle, int drive);
+
+    [LibraryImport(Dll)]
     public static partial int b88_encode_png(byte* pixels, int length, int width, int height, byte* output, int capacity);
 
     [LibraryImport(Dll)]
