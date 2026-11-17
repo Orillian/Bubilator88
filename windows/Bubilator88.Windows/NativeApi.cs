@@ -62,6 +62,11 @@ internal static unsafe partial class NativeApi
     [LibraryImport(Dll)]
     public static partial int b88_mount_disk_protected(IntPtr handle, int drive, byte* data, int length, int imageIndex, int writeProtected);
 
+    [LibraryImport(Dll)] public static partial void b88_set_mouse_enabled(IntPtr handle, int on);
+    [LibraryImport(Dll)] public static partial void b88_set_mouse_joystick_mode(IntPtr handle, int on);
+    [LibraryImport(Dll)] public static partial void b88_move_mouse(IntPtr handle, int dx, int dy);
+    [LibraryImport(Dll)] public static partial void b88_set_mouse_buttons(IntPtr handle, int left, int right);
+
     private const string Dll = "Bubilator88C";
 
     // ROM kind selectors for b88_load_rom.

@@ -22,6 +22,7 @@ public sealed partial class MainWindow : IEmulatorAppCommands
     private void ResetMachine(EmulatorBootMode? mode = null, bool? clockOverride = null)
     {
         if (_host is null) return;
+        ReleaseMouse();
         PausedOperation.Run(() =>
         {
             if (mode is not null) _bootModeIndex = (int)mode;
@@ -88,6 +89,7 @@ public sealed partial class MainWindow : IEmulatorAppCommands
         if (_host is not { } host) throw new InvalidOperationException("The emulator is unavailable.");
         byte[] blob = File.ReadAllBytes(path);
         var metadata = StateSections.ReadMetadata(blob, path);
+        ReleaseMouse();
         PausedOperation.Run(() =>
         {
             DiskTransaction(3, () =>

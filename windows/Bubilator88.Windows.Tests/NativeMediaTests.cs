@@ -46,6 +46,25 @@ namespace Bubilator88.Windows.Tests
         static NativeMediaTests() => NativeMcpLibrary.Initialize();
 
         [NativeMcpFact]
+        public void MouseExports_AcceptMovementButtonsAndBothModes()
+        {
+            IntPtr handle = NativeApi.b88_create();
+            Assert.NotEqual(IntPtr.Zero, handle);
+            try
+            {
+                NativeApi.b88_set_mouse_enabled(handle, 1);
+                NativeApi.b88_set_mouse_joystick_mode(handle, 0);
+                NativeApi.b88_move_mouse(handle, 12, -7);
+                NativeApi.b88_set_mouse_buttons(handle, 1, 1);
+                NativeApi.b88_set_mouse_buttons(handle, 0, 0);
+                NativeApi.b88_set_mouse_joystick_mode(handle, 1);
+                NativeApi.b88_move_mouse(handle, -5, 3);
+                NativeApi.b88_set_mouse_enabled(handle, 0);
+            }
+            finally { NativeApi.b88_destroy(handle); }
+        }
+
+        [NativeMcpFact]
         public void BlankDisk_AllFormats_CanMountSaveRestoreAndWriteBackWithCore()
         {
             foreach (var type in new[] { BlankDiskType.TwoD, BlankDiskType.TwoDD, BlankDiskType.TwoHD })

@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    xmlns:local="using:Bubilator88.Windows"
     Title="Bubilator88">
 
     <Grid x:Name="Root" IsTabStop="True" Background="Black" RequestedTheme="Dark"
@@ -127,6 +128,12 @@
         </muxc:MenuBar>
 
         <SwapChainPanel x:Name="ScreenPanel" Grid.Row="1" SizeChanged="OnPanelSizeChanged" />
+        <!-- SwapChainPanel has no background for XAML hit testing. -->
+        <local:MouseInputSurface x:Name="MouseInputSurface" Grid.Row="1">
+            <local:MouseInputSurface.Template>
+                <ControlTemplate><Grid Background="Transparent" /></ControlTemplate>
+            </local:MouseInputSurface.Template>
+        </local:MouseInputSurface>
 
         <!-- OCR text-detection overlay. Masked: no menu item or shortcut key
              activates it (see windows/README.md) — recognition accuracy on
@@ -173,6 +180,14 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Viewbox x:Name="MouseCaptureIcon" Width="14" Height="18" Visibility="Collapsed"
+                         AutomationProperties.Name="Mouse captured — press Shift+Esc to release"
+                         ToolTipService.ToolTip="Mouse captured — press Shift+Esc to release">
+                    <Canvas Width="16" Height="20">
+                        <Path Data="M8,1 C4.5,1 2,3.8 2,7.5 L2,12.5 C2,16.2 4.5,19 8,19 C11.5,19 14,16.2 14,12.5 L14,7.5 C14,3.8 11.5,1 8,1 Z M8,1 L8,8 M2,8 L14,8"
+                              Stroke="{ThemeResource TextFillColorPrimaryBrush}" StrokeThickness="1.5" />
+                    </Canvas>
+                </Viewbox>
                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                     <FontIcon Glyph="&#xE767;" FontSize="12" VerticalAlignment="Center" Opacity="0.8" />
                     <!-- IsTabStop=False so Tab never parks focus here; a pointer

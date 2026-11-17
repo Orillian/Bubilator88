@@ -155,6 +155,7 @@ public sealed partial class MainWindow : Window
         AppWindow.Changed += OnAppWindowChanged;
         AppWindow.Closing += OnAppWindowClosing;
 
+        InitializeMouseInput();
         Root.Loaded += OnLoaded;
         Closed += OnClosed;
         // Park emulation while minimized, as the UI-thread loop did when
@@ -187,6 +188,7 @@ public sealed partial class MainWindow : Window
     /// focus where the user put it.
     private void OnRootGettingFocus(UIElement sender, GettingFocusEventArgs e)
     {
+        if (_mouseCaptured && e.NewFocusedElement != Root) ReleaseMouse();
         if (e.NewFocusedElement is not MenuBarItem) return;
         if (e.OldFocusedElement == Root || e.OldFocusedElement is MenuBarItem) return;
         DispatcherQueue.TryEnqueue(
@@ -224,6 +226,7 @@ public sealed partial class MainWindow : Window
             if (diskArg is not null)
                 LoadDiskAtStartup(0, diskArg);
 
+            _host.SetMouseMode(_mouseEnabled, _mouseJoystick);
             ApplyBootConfig();   // initial boot — strap reflects drive 0 occupancy
 
             _screen = new D3DScreen(ScreenPanel, EmulatorHost.ScreenWidth, EmulatorHost.ScreenHeight);
@@ -1091,6 +1094,9 @@ public sealed partial class MainWindow : Window
     // window scale, boot mode, CPU clock, master volume).
     private sealed class AppSettings
     {
+        public bool MouseEnabled { get; set; }
+        public bool MouseJoystick { get; set; }
+        public double MouseSensitivity { get; set; } = 0.5;
         public bool AutomationEnabled { get; set; }
         public int AutomationPort { get; set; } = 18801;
         public string? AutomationToken { get; set; }
@@ -1143,6 +1149,9 @@ public sealed partial class MainWindow : Window
             if (!File.Exists(SettingsPath)) return;
             var s = System.Text.Json.JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsPath));
             if (s is null) return;
+            _mouseEnabled = s.MouseEnabled;
+            _mouseJoystick = s.MouseJoystick;
+            _mouseSensitivity = double.IsFinite(s.MouseSensitivity) ? Math.Clamp(s.MouseSensitivity, 0.5, 3.0) : 0.5;
             _automationEnabled = s.AutomationEnabled;
             _automationPort = s.AutomationPort is >= 1024 and <= 65535 ? s.AutomationPort : 18801;
             if (!string.IsNullOrWhiteSpace(s.AutomationToken)) _automationToken = s.AutomationToken;
@@ -1196,6 +1205,9 @@ public sealed partial class MainWindow : Window
             if (dir is not null) Directory.CreateDirectory(dir);
             File.WriteAllText(SettingsPath, System.Text.Json.JsonSerializer.Serialize(new AppSettings
             {
+                MouseEnabled = _mouseEnabled,
+                MouseJoystick = _mouseJoystick,
+                MouseSensitivity = _mouseSensitivity,
                 AutomationEnabled = _automationEnabled,
                 AutomationPort = _automationPort,
                 AutomationToken = _automationToken,
@@ -1851,8 +1863,8 @@ public sealed partial class MainWindow : Window
         return string.Join(", ", names);
     }
 
-    /// Brief non-modal notification (mirrors the macOS showToast), auto-removed
-    /// after ~1.2 s. Sits over the screen panel, bottom-center.
+    /// Brief non-modal notification over the bottom center of the screen panel.
+    /// Removed after three seconds.
     private async void ShowToast(string message)
     {
         try
@@ -1875,7 +1887,7 @@ public sealed partial class MainWindow : Window
             };
             Grid.SetRow(toast, 1);
             Root.Children.Add(toast);
-            await Task.Delay(1200);
+            await Task.Delay(TimeSpan.FromSeconds(3));
             Root.Children.Remove(toast);
         }
         catch { /* best-effort UI */ }
@@ -1935,6 +1947,12 @@ public sealed partial class MainWindow : Window
         // Root's KeyDown also sees keys bubbling up from focused chrome (a
         // MenuBarItem during keyboard menu navigation). Those belong to that
         // control, so only act when the emulation view itself has focus.
+        if (_mouseCaptured && e.Key == VirtualKey.Escape && KeyHeld(0x10))
+        {
+            ReleaseMouse();
+            e.Handled = true;
+            return;
+        }
         if (!ReferenceEquals(e.OriginalSource, Root)) return;
 
         // Host menu shortcuts win over emulator key input. The screen greedily
@@ -1988,6 +2006,7 @@ public sealed partial class MainWindow : Window
 
     private void OnClosed(object sender, WindowEventArgs e)
     {
+        DisposeMouseInput();
         AppWindow.Closing -= OnAppWindowClosing;
         _diskWriteBackTimer?.Stop();
         AppWindow.Changed -= OnAppWindowChanged;

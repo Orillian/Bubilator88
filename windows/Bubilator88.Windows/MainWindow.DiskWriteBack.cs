@@ -33,6 +33,7 @@ public sealed partial class MainWindow
 
     private void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
+        ReleaseMouse();
         bool wasRunning = !_paused;
         _automationClosing = true;
         SetEmulatorRunning(false);

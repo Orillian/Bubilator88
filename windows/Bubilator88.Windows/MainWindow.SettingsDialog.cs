@@ -17,9 +17,8 @@ namespace Bubilator88.Windows;
 /// application-menu Preferences item; Windows has no such menu, so it opens from
 /// the Emulator menu instead.
 ///
-/// <para>The macOS window has five tabs (General / Display / Audio / Keyboard /
-/// Controller). Most of those settings drive features the Windows native
-/// host doesn't implement yet (mouse, immersive audio, translation, recording,
+/// <para>The macOS window has several settings tabs. Most of those settings drive features the Windows native
+/// host doesn't implement yet (immersive audio, translation, recording,
 /// …), so this dialog mirrors the tab layout but surfaces only the preferences
 /// that have a working Windows backend — Controller included, backed by
 /// Windows.Gaming.Input.Gamepad (see GameController/GameControllerManager.cs).
@@ -43,6 +42,31 @@ public sealed partial class MainWindow
         KeyMapping.WasdAsNumpad = _wasdAsNumpad;
     }
 
+    private FrameworkElement BuildMouseTab()
+    {
+        var panel = NewTabPanel();
+        var enabled = Toggle("Enable Mouse Input", _mouseEnabled, value =>
+        {
+            _mouseEnabled = value;
+            if (!value) ReleaseMouse();
+            _host?.SetMouseMode(_mouseEnabled, _mouseJoystick);
+            SaveSettings();
+        });
+        var mode = LabeledCombo("Mode", new[] { ("Bus Mouse (PC-8872)", "bus"),
+            ("Joystick (mouse-as-joystick)", "joystick") }, _mouseJoystick ? "joystick" : "bus", value =>
+        {
+            _mouseJoystick = value == "joystick";
+            _host?.SetMouseMode(_mouseEnabled, _mouseJoystick);
+            SaveSettings();
+        });
+        var slider = new Slider { Minimum = 0.5, Maximum = 3.0, StepFrequency = 0.1,
+            Value = _mouseSensitivity, Header = "Sensitivity" };
+        slider.ValueChanged += (_, e) => { _mouseSensitivity = e.NewValue; SaveSettings(); };
+        panel.Children.Add(Section("Mouse", new FrameworkElement[] { enabled, mode, slider },
+            "Click the emulation screen to capture the mouse. Press Shift+Esc to release it."));
+        return panel;
+    }
+
     /// <summary>Integer and 4:3 layouts apply only in fullscreen (the windowed
     /// view scales are already exact integer multiples of 640×400).</summary>
     private void ApplyIntegerScaling()
@@ -54,6 +78,7 @@ public sealed partial class MainWindow
 
     private async void OnSettings(object sender, RoutedEventArgs e)
     {
+        ReleaseMouse();
         // SelectorBar (Windows App SDK 1.5+) is the successor to Pivot for a
         // handful of views: it only draws the headers, so the selected tab's
         // content is swapped into the presenter below. Every tab is built up
@@ -65,6 +90,7 @@ public sealed partial class MainWindow
             ("Audio", WrapTab(BuildAudioTab())),
             ("Keyboard", WrapTab(BuildKeyboardTab())),
             ("Controller", WrapTab(BuildControllerTab())),
+            ("Mouse", WrapTab(BuildMouseTab())),
         };
 
         var bar = new SelectorBar();

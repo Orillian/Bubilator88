@@ -384,6 +384,20 @@ internal sealed unsafe partial class EmulatorHost : IDisposable
     /// <summary>Release a PC-88 matrix cell directly. See <see cref="PressMatrixKey"/>.</summary>
     public void ReleaseMatrixKey(int row, int bit) { lock (SyncRoot) NativeApi.b88_release_key(_handle, row, bit); }
 
+    public void SetMouseMode(bool enabled, bool joystick)
+    {
+        lock (SyncRoot)
+        {
+            NativeApi.b88_set_mouse_joystick_mode(_handle, joystick ? 1 : 0);
+            NativeApi.b88_set_mouse_enabled(_handle, enabled ? 1 : 0);
+        }
+    }
+    public void MoveMouse(int dx, int dy) { lock (SyncRoot) NativeApi.b88_move_mouse(_handle, dx, dy); }
+    public void SetMouseButtons(bool left, bool right)
+    {
+        lock (SyncRoot) NativeApi.b88_set_mouse_buttons(_handle, left ? 1 : 0, right ? 1 : 0);
+    }
+
     public void ReleaseAllKeys() { lock (SyncRoot) NativeApi.b88_release_all_keys(_handle); }
 
     public void Dispose()

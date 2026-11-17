@@ -26,6 +26,8 @@
        assembly, so their `internal` members are reachable without
        InternalsVisibleTo. Add more linked files here as testable logic grows. -->
   <ItemGroup>
+    <Compile Include="..\Bubilator88.Windows\MouseButtons.cs" Link="Linked\MouseButtons.cs" />
+    <Compile Include="..\Bubilator88.Windows\MouseMotion.cs" Link="Linked\MouseMotion.cs" />
     <Compile Include="..\Bubilator88.Windows\BlankDiskCreation.cs" Link="Linked\BlankDiskCreation.cs" />
     <EmbeddedResource Include="..\..\Shared\BlankDisks\*.d88.gz;..\..\Shared\BlankDisks\manifest.json">
       <LogicalName>Bubilator88.BlankDisks.%(Filename)%(Extension)</LogicalName>
