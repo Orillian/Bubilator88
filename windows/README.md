@@ -188,6 +188,16 @@ python scripts\convert_realesrgan_onnx.py     # RealESRGAN_x2plus.pth を自動D
 dotnet run --project windows\Bubilator88.Windows -c Release -r win-x64
 ```
 
+Windows版は単一起動です。起動済みの場合は既存ウィンドウを手前に出し、最小化中なら
+復元します。2回目の起動では新しいエミュレーターを作らず、起動引数によるディスクの
+マウントも行いません。
+
+実行ファイルでの起動確認（アプリを閉じてから実行）:
+
+```powershell
+./scripts/test-windows-single-instance.ps1 -ExePath windows/Bubilator88.Windows/bin/Release/net10.0-windows10.0.22621.0/win-x64/Bubilator88.exe
+```
+
 > **ランタイム依存**: `Bubilator88C.dll` は Swift ランタイム DLL(`swiftCore.dll` 等)に依存する。
 > 開発機では `...\Swift\Runtimes\6.3.2\usr\bin` が PATH 上なので `dotnet run` で解決するが、
 > 単体配布する場合は同 bin の DLL 群を exe の隣に同梱する必要がある(手動 `dotnet run` では
