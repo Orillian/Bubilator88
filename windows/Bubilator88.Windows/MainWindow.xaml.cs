@@ -888,11 +888,13 @@ public sealed partial class MainWindow : Window
         });
     }
 
-    private void ToggleWriteProtect(int drive)
+    private void ToggleWriteProtect(int drive) => SetDriveWriteProtect(drive, !_drives[drive].WriteProtected);
+
+    private void SetDriveWriteProtect(int drive, bool protectedFlag)
     {
         var slot = _drives[drive];
         if (_host is null || !slot.Occupied) return;
-        slot.WriteProtected = !slot.WriteProtected;
+        slot.WriteProtected = protectedFlag;
         _host.SetWriteProtect(drive, slot.WriteProtected);
         RebuildDiskMenu();
         UpdateDiskStatus();

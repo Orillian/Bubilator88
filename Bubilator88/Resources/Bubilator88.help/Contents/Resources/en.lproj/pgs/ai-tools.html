@@ -39,10 +39,10 @@
     <h2>What the AI Can Do</h2>
     <table>
         <tr><th>Area</th><th>Description</th></tr>
-        <tr><td>Running</td><td>Reset, run a given number of frames, pause and resume</td></tr>
+        <tr><td>Running</td><td>Reset, run a given number of frames, run until text appears or the screen settles, pause and resume</td></tr>
         <tr><td>Input</td><td>Press keys, type text, record and replay input</td></tr>
-        <tr><td>Screen</td><td>Take screenshots and read the text screen</td></tr>
-        <tr><td>Media</td><td>Mount disks and tapes, save and load states</td></tr>
+        <tr><td>Screen and sound</td><td>Take screenshots, read the text screen, check that sound is playing and record it to WAV</td></tr>
+        <tr><td>Media</td><td>Insert and eject disks, CDs and tapes, boot tapes, load memory images, write-protect disks, save and load states</td></tr>
         <tr><td>Development</td><td>Read and write registers and memory, disassemble, set breakpoints, watch memory writes, and time code</td></tr>
     </table>
     <p>What the AI does shows on the screen and in the debugger window as it happens.</p>
@@ -57,13 +57,18 @@
         <tr><td>"Enter BUBIO on the name screen and start the game."</td><td>Checks the screen for the entry field, types the name and presses <kbd>RETURN</kbd></td></tr>
         <tr><td>"I'm right before the boss. Save a state."</td><td>Saves a <code>.b88s</code> file where you say. Ask "load that state" later to go back</td></tr>
         <tr><td>"Read the message on the screen and summarize it in English."</td><td>Reads the text screen. Text drawn as graphics is read from a screenshot</td></tr>
+        <tr><td>"Insert ~/CD/game.cue and boot it."</td><td>Inserts the CD and boots from it. Needs CDBIOS.ROM</td></tr>
+        <tr><td>"Take the CD out and boot from the disk again."</td><td>Ejects the CD and resets. A CD in the drive boots ahead of the disks, so the AI checks for one first</td></tr>
+        <tr><td>"How many disks are in ~/Games/bar.d88? Put the second one in drive 2."</td><td>Lists the disks in the file and mounts the one you name</td></tr>
+        <tr><td>"Check that the music is actually playing."</td><td>Records the sound for a while and reports its level for FM, SSG, ADPCM, rhythm and CD. It can also save a WAV file</td></tr>
     </table>
 
     <h3>Using BASIC</h3>
     <table>
         <tr><th>Ask</th><th>What the AI does</th></tr>
         <tr><td>"Type in an N88-BASIC program that draws ten circles, and run it."</td><td>Writes the program, types it on the keyboard, enters <code>RUN</code> and checks the result on screen</td></tr>
-        <tr><td>"Load this tape (~/Tapes/bar.cmt) with CLOAD and run it."</td><td>Mounts the tape, types <code>CLOAD</code> and <code>RUN</code>, and runs until loading finishes</td></tr>
+        <tr><td>"Load this tape (~/Tapes/bar.cmt) and run it."</td><td>Mounts the tape, types <code>LOAD "CAS:"</code> and <code>RUN</code> as <strong>Tape &gt; Auto Boot</strong> does, and runs until loading finishes</td></tr>
+        <tr><td>"Load ~/Mem/baz.n80."</td><td>Restarts in N-BASIC, restores the PC-8001 memory image and types <code>RUN</code> if it needs it</td></tr>
         <tr><td>"If there's an error, find the cause, fix it and run it again."</td><td>Reads the error message on screen, retypes the line and runs the program</td></tr>
     </table>
 
@@ -106,6 +111,7 @@
     <ul>
         <li><strong>Give full paths</strong> — Name disks and states by a location starting with <code>~/</code> or <code>/Users/…</code>.</li>
         <li><strong>The emulator pauses while the AI works</strong> — The AI runs the emulator as many frames as it needs, as fast as it can, and stops there. To play on yourself, ask it to "run in real time" or choose <strong>Emulator &gt; Resume</strong> (<kbd>&#8984;P</kbd>).</li>
+        <li><strong>Say when to stop</strong> — Ask for something like "run until the title screen" or "wait for it to finish loading", and the AI runs in one go until the text appears or the screen settles.</li>
         <li><strong>No kanji</strong> — The AI can type letters, digits, symbols and half-width katakana.</li>
         <li><strong>Reading the screen</strong> — Text on the text screen is read exactly. Text drawn as graphics, and pictures, the AI judges by looking at a screenshot.</li>
     </ul>

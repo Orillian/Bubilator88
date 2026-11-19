@@ -110,6 +110,10 @@ nonisolated final class AppAutomationHost: AutomationHost, @unchecked Sendable {
   }
 
   func runFrames(_ count: Int, beforeEach: (PC88) -> Bool) throws -> Int {
+    try runFrames(count, beforeEach: beforeEach, afterEach: { _ in })
+  }
+
+  func runFrames(_ count: Int, beforeEach: (PC88) -> Bool, afterEach: (PC88) -> Void) throws -> Int {
     // The AI takes the machine over: real-time running stops and stays
     // stopped, so the next look at the screen shows what these frames did.
     let viewModel = try onMain { viewModel in
@@ -125,6 +129,7 @@ nonisolated final class AppAutomationHost: AutomationHost, @unchecked Sendable {
         guard !viewModel.emulationLoop.shouldRun, beforeEach(pc88) else { return false }
         viewModel.applyPendingInput()
         viewModel.runHostFrame()
+        afterEach(pc88)
         // Nothing plays while paused; drop the sound rather than let it
         // burst out when real time resumes.
         _ = pc88.takeAudioSamples()
@@ -219,7 +224,9 @@ nonisolated final class AppAutomationHost: AutomationHost, @unchecked Sendable {
       throw AutomationError("Cannot read \(url.path).")
     }
     return try onMain { viewModel in
-      guard viewModel.mountTape(url: url), let format = viewModel.tapeFormat else {
+      // The tool boots the tape itself when asked (tape boot), keeping the
+      // machine paused; Auto Boot would set it running.
+      guard viewModel.insertTape(url: url), let format = viewModel.tapeFormat else {
         throw AutomationError("Cannot load \(url.lastPathComponent) as a tape.")
       }
       return format
@@ -232,5 +239,31 @@ nonisolated final class AppAutomationHost: AutomationHost, @unchecked Sendable {
 
   func ejectTape() throws {
     try onMain { $0.ejectTape() }
+  }
+
+  func mountCD(url: URL) throws {
+    try onMain { viewModel in
+      do {
+        try viewModel.insertCD(url: url)
+      } catch {
+        throw AutomationError(viewModel.cdMountErrorMessage(error, url: url))
+      }
+    }
+  }
+
+  func ejectCD() throws {
+    try onMain { $0.ejectCD() }
+  }
+
+  func setWriteProtect(drive: Int, protected: Bool) throws {
+    try onMain { $0.setWriteProtect(drive: drive, protected: protected) }
+  }
+
+  var cdName: String? {
+    try? onMain { $0.isCDMounted ? $0.cdName : nil }
+  }
+
+  var tapeName: String? {
+    try? onMain { $0.isTapeMounted ? $0.tapeName : nil }
   }
 }

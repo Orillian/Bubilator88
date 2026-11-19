@@ -42,11 +42,13 @@ public sealed partial class MainWindow
             var ui = new AutomationUiDispatcher(action => !_automationClosing && DispatcherQueue.TryEnqueue(() => action()));
             var appHost = new AppAutomationHost(this,
                 action => host.InvokeMachineAction(() => { action(); return 0; }),
-                (beforeEach, token) => host.InvokeMachineAction(() =>
+                (beforeEach, afterFrame, token) => host.InvokeMachineAction(() =>
                 {
                     token.ThrowIfCancellationRequested();
                     if (_automationClosing || _loop is null || _loop.ShouldRun || !beforeEach()) return 0;
                     host.RunFrame();
+                    // Before the audio goes: capture_audio reads it here.
+                    afterFrame?.Invoke();
                     host.DiscardAudio();
                     _sliceIndex = 0;
                     return 1;

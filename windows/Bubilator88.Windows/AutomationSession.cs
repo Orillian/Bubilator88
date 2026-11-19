@@ -42,6 +42,11 @@ internal sealed class AutomationSession : IAsyncDisposable
             EjectDisk = (_, drive, result) => Guard(result, () => _host.EjectDisk(drive, _activeToken)),
             SaveState = (_, path, result) => Guard(result, () => _host.SaveState(path, _activeToken)),
             LoadState = (_, path, result) => Guard(result, () => _host.LoadState(path, _activeToken)),
+            RunFrameAfter = (_, predicate, data, after, afterData, result) => Guard(result,
+                () => _host.RunFrame(() => InvokeAction(predicate, data) != 0,
+                    () => InvokeAction(after, afterData), _activeToken) ? 1 : 0, 0),
+            SetWriteProtect = (_, drive, protectedFlag, result) => Guard(result,
+                () => _host.SetWriteProtect(drive, protectedFlag != 0, _activeToken)),
         };
         _session = createSession(_callbacks, version);
         if (_session == IntPtr.Zero) throw new InvalidOperationException("Cannot create the MCP session.");

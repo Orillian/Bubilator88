@@ -564,9 +564,14 @@ extension EmulatorViewModel {
   /// Toggle the write-protect flag on the disk mounted in the specified drive.
   /// No-op when the drive is empty.
   func toggleWriteProtect(drive: Int) {
+    setWriteProtect(drive: drive, protected: !(drive == 0 ? drive0WriteProtected : drive1WriteProtected))
+  }
+
+  /// Set the write-protect flag on the disk mounted in the specified drive.
+  /// No-op when the drive is empty.
+  func setWriteProtect(drive: Int, protected newValue: Bool) {
     let name = drive == 0 ? drive0Name : drive1Name
     guard name != "Empty" else { return }
-    let newValue = !(drive == 0 ? drive0WriteProtected : drive1WriteProtected)
     emuQueue.sync {
       pc88.setWriteProtect(drive: drive, protected: newValue)
     }
