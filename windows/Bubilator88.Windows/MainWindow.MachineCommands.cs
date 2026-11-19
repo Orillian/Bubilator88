@@ -14,6 +14,7 @@ public sealed partial class MainWindow : IEmulatorAppCommands
     string IEmulatorAppCommands.MountDisk(int drive, string path, int imageIndex, bool writeProtected) =>
         MountDiskFile(drive, path, imageIndex, writeProtected);
     void IEmulatorAppCommands.EjectDisk(int drive) => EjectDrive(drive);
+    void IEmulatorAppCommands.SetWriteProtect(int drive, bool protectedFlag) => SetDriveWriteProtect(drive, protectedFlag);
     void IEmulatorAppCommands.SaveState(string path) => SaveStateFile(path);
     void IEmulatorAppCommands.LoadState(string path) => LoadStateFile(path);
 

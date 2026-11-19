@@ -44,6 +44,9 @@ must not re-enter the session API.
 time. Every frame rechecks whether the user resumed, executes the Core's
 before-frame predicate, runs normal host frame work including cheats and
 discards paused audio. It publishes the resulting screen and stays paused.
+The app also registers the optional after-frame callback
+(`b88_mcp_app_session_set_frame_after`): the Core's after-frame action runs
+between the frame and the audio discard, which is how `capture_audio` hears it.
 Tools such as breakpoints, watches, profiling and recording remain implemented
 only in Core.
 
@@ -65,7 +68,8 @@ app's single front-panel reset operation. A requested clock override applies
 to that reset without changing the saved clock preference.
 
 Normal menus and MCP both call `IEmulatorAppCommands`, implemented in
-`MainWindow.MachineCommands.cs`. Disk mount/eject update the same drive tracking,
+`MainWindow.MachineCommands.cs`. Disk mount/eject and write protection (`set_write_protect`, through
+`b88_mcp_app_session_set_write_protect`) update the same drive tracking,
 recent files, menus and status. The additive `b88_mount_disk_protected` API sets
 protection before passing a disk to the machine, including the delayed swap
 slot; a post-mount flag update would miss that slot.
@@ -118,3 +122,6 @@ and cancellation before/after a UI callback starts. Core tests separately cover
 legacy APIs, typed callbacks, session recreation and protection across the disk
 swap delay. The pixel comparison regression suite still needs its
 macOS reference environment before committing Core source changes.
+
+The app has no CD-ROM UI yet and does not load CDBIOS.ROM, so `cd mount`
+reports that the machine has no CD BIOS loaded and takes the disc out again.

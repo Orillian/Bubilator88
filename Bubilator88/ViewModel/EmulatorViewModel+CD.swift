@@ -25,7 +25,7 @@ extension EmulatorViewModel {
       return false
     }
     do {
-      try emuQueue.sync { try pc88.mountCD(url: url) }
+      try insertCD(url: url)
     } catch {
       showAlert(
         title: String(localized: "CD Load Error", comment: "Alert title"),
@@ -33,16 +33,22 @@ extension EmulatorViewModel {
       )
       return false
     }
-    Settings.shared.addRecentFile(url: url, kind: .cd)
-    cdName = url.deletingPathExtension().lastPathComponent
-    cdSourceURL = url
-    isCDMounted = true
     // The storage rather than `bootMode` / `clock8MHz`, whose setters each
     // reset the machine; the reset below picks both up.
     _bootModeStorage = .n88v2
     Settings.shared.clock8MHz = true
     reset()
     return true
+  }
+
+  /// Put a CD in the drive and show it, without resetting: the drive and
+  /// the CD BIOS come in at the next reset.
+  func insertCD(url: URL) throws {
+    try emuQueue.sync { try pc88.mountCD(url: url) }
+    Settings.shared.addRecentFile(url: url, kind: .cd)
+    cdName = url.deletingPathExtension().lastPathComponent
+    cdSourceURL = url
+    isCDMounted = true
   }
 
   /// Entry point for a `.cue` / `.ccd` opened from Finder. A cold launch
@@ -128,7 +134,7 @@ extension EmulatorViewModel {
     }
   }
 
-  private func cdMountErrorMessage(_ error: Error, url: URL) -> String {
+  func cdMountErrorMessage(_ error: Error, url: URL) -> String {
     switch error as? CDImageError {
     case .imageFileNotFound(let name):
       return String(localized: "\(name) not found next to \(url.lastPathComponent)",

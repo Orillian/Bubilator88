@@ -9,9 +9,19 @@ extension EmulatorViewModel {
   /// Mount a cassette-tape image (`.cmt` / `.t88`, or an archive
   /// containing one). Multi-entry archives mount the first hit — PC-88
   /// tape ZIPs in the wild are almost always single-file so a picker
-  /// isn't justified here.
+  /// isn't justified here. Boots it when Tape > Auto Boot is on.
   @discardableResult
   func mountTape(url: URL) -> Bool {
+    guard insertTape(url: url) else { return false }
+    // Every way of opening a tape ends here, the picker and Recent Files alike.
+    if Settings.shared.tapeAutoBoot { startTapeAutoBoot() }
+    return true
+  }
+
+  /// Put a cassette in and show it, without booting it: what AI tools use,
+  /// which boot a tape themselves and keep the machine paused.
+  @discardableResult
+  func insertTape(url: URL) -> Bool {
     let accessing = url.startAccessingSecurityScopedResource()
     defer { if accessing { url.stopAccessingSecurityScopedResource() } }
     guard let data = try? Data(contentsOf: url) else {
@@ -44,8 +54,6 @@ extension EmulatorViewModel {
     // Set here rather than waiting for the 4Hz sampler, so the menus and the
     // status bar update on the same run loop turn as the mount.
     isTapeMounted = true
-    // Every way of opening a tape ends here, the picker and Recent Files alike.
-    if Settings.shared.tapeAutoBoot { startTapeAutoBoot() }
     return true
   }
 

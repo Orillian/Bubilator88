@@ -34,6 +34,8 @@ public sealed class AutomationSessionTests
         public void Reset(EmulatorBootMode? mode, bool? clock8MHz) => throw new InvalidOperationException("Host command refused for testing.");
         public string MountDisk(int drive, string path, int imageIndex, bool writeProtected) => "Disk name";
         public void EjectDisk(int drive) { }
+        public (int Drive, bool Protected)? WriteProtect;
+        public void SetWriteProtect(int drive, bool protectedFlag) => WriteProtect = (drive, protectedFlag);
         public void SaveState(string path) { }
         public void LoadState(string path) { }
     }
@@ -46,12 +48,14 @@ public sealed class AutomationSessionTests
         int frames = 0;
         var sync = new object();
         var host = new AppAutomationHost(commands, action => { lock (sync) action(); },
-            (before, token) =>
+            (before, after, token) =>
             {
                 lock (sync)
                 {
                     if (commands.IsRunning || !before()) return false;
-                    NativeApi.b88_run_frame(machine); frames++; return true;
+                    NativeApi.b88_run_frame(machine); frames++;
+                    after?.Invoke();
+                    return true;
                 }
             }, new AutomationUiDispatcher(action => { action(); return true; }));
         try
@@ -96,7 +100,7 @@ public sealed class AutomationSessionTests
         IntPtr machine = NativeApi.b88_create();
         using var entered = new ManualResetEventSlim();
         Action? queued = null;
-        var host = new AppAutomationHost(new Commands(), action => action(), (_, _) => false,
+        var host = new AppAutomationHost(new Commands(), action => action(), (_, _, _) => false,
             new AutomationUiDispatcher(action => { queued = action; entered.Set(); return true; }));
         try
         {
