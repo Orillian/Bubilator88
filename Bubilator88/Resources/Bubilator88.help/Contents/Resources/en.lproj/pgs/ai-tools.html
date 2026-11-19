@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="AppleTitle" content="Control from AI Tools">
-    <meta name="description" content="Letting AI tools that support MCP control the emulator, registering it with them, and the port and safety">
+    <meta name="description" content="Letting AI tools that support MCP control the emulator, examples, registering it with them, and the port and safety">
     <meta name="keywords" content="AI, MCP, Claude Code, Codex, Gemini, Copilot, Cursor, automation, agent">
     <meta name="robots" content="index">
     <title>Control from AI Tools</title>
@@ -34,7 +34,7 @@
     <div class="help-content">
     <a name="ai-tools"></a>
     <h1>Control from AI Tools</h1>
-    <p>AI tools that support MCP (Model Context Protocol) can control Bubilator88 while it runs. Ask for something like "boot this disk and get to the title screen", and the AI presses the keys, runs the emulator and checks the screen.</p>
+    <p>AI tools that support MCP (Model Context Protocol) can control Bubilator88 while it runs. Ask in plain words for something like "boot this disk and get to the title screen", and the AI presses the keys, runs the emulator and checks the screen.</p>
 
     <h2>What the AI Can Do</h2>
     <table>
@@ -46,6 +46,42 @@
         <tr><td>Development</td><td>Read and write registers and memory, disassemble, set breakpoints, watch memory writes, and time code</td></tr>
     </table>
     <p>What the AI does shows on the screen and in the debugger window as it happens.</p>
+
+    <h2>Examples</h2>
+    <p>Ask the AI tool in everyday words. Here are some things you can ask for.</p>
+
+    <h3>Starting and Playing a Game</h3>
+    <table>
+        <tr><th>Ask</th><th>What the AI does</th></tr>
+        <tr><td>"Put ~/Games/foo.d88 in drive 1, boot it, and show me the title screen."</td><td>Mounts the disk, resets, runs frames while checking the screen, and returns a screenshot of the title screen</td></tr>
+        <tr><td>"Enter BUBIO on the name screen and start the game."</td><td>Checks the screen for the entry field, types the name and presses <kbd>RETURN</kbd></td></tr>
+        <tr><td>"I'm right before the boss. Save a state."</td><td>Saves a <code>.b88s</code> file where you say. Ask "load that state" later to go back</td></tr>
+        <tr><td>"Read the message on the screen and summarize it in English."</td><td>Reads the text screen. Text drawn as graphics is read from a screenshot</td></tr>
+    </table>
+
+    <h3>Using BASIC</h3>
+    <table>
+        <tr><th>Ask</th><th>What the AI does</th></tr>
+        <tr><td>"Type in an N88-BASIC program that draws ten circles, and run it."</td><td>Writes the program, types it on the keyboard, enters <code>RUN</code> and checks the result on screen</td></tr>
+        <tr><td>"Load this tape (~/Tapes/bar.cmt) with CLOAD and run it."</td><td>Mounts the tape, types <code>CLOAD</code> and <code>RUN</code>, and runs until loading finishes</td></tr>
+        <tr><td>"If there's an error, find the cause, fix it and run it again."</td><td>Reads the error message on screen, retypes the line and runs the program</td></tr>
+    </table>
+
+    <h3>Recording and Replaying Input</h3>
+    <table>
+        <tr><th>Ask</th><th>What the AI does</th></tr>
+        <tr><td>"Record from here to ~/rec/stage1.b88s and play until stage 1 is cleared."</td><td>Saves the current state, records the input, and adds it to the same file when done</td></tr>
+        <tr><td>"Replay stage1.b88s and show me the last screen."</td><td>Replays the recorded input on the same frames to reproduce the same scene</td></tr>
+    </table>
+
+    <h3>Analyzing and Developing Programs</h3>
+    <table>
+        <tr><th>Ask</th><th>What the AI does</th></tr>
+        <tr><td>"Find where the number of lives is kept and set it to 99."</td><td>Compares memory before and after losing a life to find the address, then writes the new value</td></tr>
+        <tr><td>"Find the code that draws this part of the screen."</td><td>Tracks memory writes and looks up the instruction and address that last wrote there</td></tr>
+        <tr><td>"Load my assembled ~/src/game.bin, stop at MAIN from the symbol file, and show the registers."</td><td>Loads the machine code into RAM, reads the symbols, sets a breakpoint, and returns the registers and disassembly where it stops</td></tr>
+        <tr><td>"Measure how many T-states the drawing routine uses per frame."</td><td>Times the given stretch of code and reports the count, total, longest and mean</td></tr>
+    </table>
 
     <h2>Setting It Up</h2>
     <ol>
@@ -66,12 +102,27 @@
     <p>The text can be edited. If an AI tool has changed how it is registered, fix the text before copying it.</p>
     <p>With the Develop menu shown, <strong>Develop &gt; Allow Control from AI Tools</strong> turns it on and off too. The setting is kept across launches.</p>
 
+    <h2>Tips</h2>
+    <ul>
+        <li><strong>Give full paths</strong> — Name disks and states by a location starting with <code>~/</code> or <code>/Users/…</code>.</li>
+        <li><strong>The emulator pauses while the AI works</strong> — The AI runs the emulator as many frames as it needs, as fast as it can, and stops there. To play on yourself, ask it to "run in real time" or choose <strong>Emulator &gt; Resume</strong> (<kbd>&#8984;P</kbd>).</li>
+        <li><strong>No kanji</strong> — The AI can type letters, digits, symbols and half-width katakana.</li>
+        <li><strong>Reading the screen</strong> — Text on the text screen is read exactly. Text drawn as graphics, and pictures, the AI judges by looking at a screenshot.</li>
+    </ul>
+
     <h2>Port and Safety</h2>
     <ul>
         <li>Only this Mac can connect.</li>
         <li>The port starts at 18801. If another app uses it, change it and register again with your AI tools.</li>
         <li>The registration text holds the password (token) for connecting. Do not show it to others.</li>
         <li>The AI reads and writes disk and state files at the paths it gives. Turn it off when you are not using it.</li>
+    </ul>
+
+    <h2>If It Does Not Connect</h2>
+    <ul>
+        <li>Check that Bubilator88 is running and <strong>Allow control from AI tools</strong> is on.</li>
+        <li>Check that you started a new session in the AI tool after registering.</li>
+        <li>If you changed the port, register again with the AI tool.</li>
     </ul>
 
     <p><a href="../index.html">Back to Bubilator88 Help</a></p>
