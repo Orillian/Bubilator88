@@ -146,6 +146,7 @@ Updating these docs:
 | `RELEASE_EXCLUSIVITY.md` | Why distribution builds use `unchecked` exclusivity, the CI gates that verify it, and how to re-verify locally |
 | `AI_WORKFLOW.md` | Guide to AI-assisted development, written for humans |
 | `AUTOMATION.md` | AI agent control over MCP: the tools in the core's `Bubilator88Automation`, the app's Streamable HTTP server, the headless `bubilator88-mcp`, and the Windows entry point |
+| `TOUCH_SUPPORT.md` | Touch-display MacBook Pro: how macOS delivers touch, what breaks in the app (held keys on the software keyboard, multi-finger input), proposals, and why they wait for hardware (Sidecar or a real Mac; MeowDisplay cannot test it) |
 | `PAR_CHEAT_CODES.md` | 88PAR (`.pat`) cheat code format, pat.dll behaviour from disassembly, and how it maps onto Bubilator88. The primary sources (PATCH.DOC, pat.dll, QUASI88 glue, the code lists) are preserved in `PAR/` |
 
 ## Development Rules
