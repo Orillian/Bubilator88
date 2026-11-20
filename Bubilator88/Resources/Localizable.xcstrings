@@ -4807,12 +4807,42 @@
         }
       }
     },
+    "Recent CDs" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近使ったCD"
+          }
+        }
+      }
+    },
+    "Recent Disks" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近使ったディスク"
+          }
+        }
+      }
+    },
     "Recent Files" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "最近使ったファイル"
+          }
+        }
+      }
+    },
+    "Recent Tapes" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近使ったテープ"
           }
         }
       }

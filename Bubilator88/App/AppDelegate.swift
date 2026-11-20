@@ -227,6 +227,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     return .terminateLater
   }
 
+  /// Rebuilt on every request so it shows the current run state and recent
+  /// files. See `DockMenu`.
+  @MainActor
+  func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+    guard let viewModel else { return nil }
+    return DockMenu.make(viewModel: viewModel)
+  }
+
   /// Closing the main emulator window should tear the whole app down,
   /// including any supplementary windows (Debugger, etc.). Without
   /// this override, the app would stay alive with only the debugger
