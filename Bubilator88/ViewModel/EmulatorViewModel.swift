@@ -1580,6 +1580,20 @@ final class EmulatorViewModel {
     showToast(String(localized: "State saved", comment: ""))
   }
 
+  /// Quick save that reports failure instead of swallowing it, for callers
+  /// that must tell the user whether it worked (App Intents).
+  func quickSaveReportingErrors() throws {
+    let wasRunning = isRunning
+    if wasRunning { stop() }
+    let result = Result { try writeSaveState(to: quickSavePath) }
+    // Restart before the toast, as `performSave` does: `start()` shows its
+    // own "Running" toast, which would otherwise replace "State saved".
+    if wasRunning { start() }
+    try result.get()
+    saveStateRevision += 1
+    showToast(String(localized: "State saved", comment: ""))
+  }
+
   /// Serializes the machine and its app metadata into `path`. The caller must
   /// have `stop()`ped the run loop: the thumbnail is read straight out of
   /// `pixelBuffer`.

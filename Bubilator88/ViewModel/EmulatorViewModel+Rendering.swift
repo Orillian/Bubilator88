@@ -394,6 +394,11 @@ extension EmulatorViewModel {
     showToast(String(localized: "Screenshot copied to clipboard", comment: ""))
   }
 
+  /// The screen as PNG, filtered as displayed. Used by the Siri screen export.
+  func screenImageData() -> Data? {
+    renderScreenshotData(format: "png")
+  }
+
   private func renderScreenshotData(format: String) -> Data? {
     // Prefer the Metal filter pipeline — matches what's on screen
     // (CRT phosphor, Enhanced/xBRZ, AI Upscaler, scanlines, etc.).

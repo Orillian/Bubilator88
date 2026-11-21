@@ -161,6 +161,19 @@ nonisolated struct DiskCacheManager {
     return entry.data
   }
 
+  /// The archive a cached `.d88` was extracted from, as recorded in its
+  /// directory's `source.json`. Nil for a file outside the cache or when the
+  /// metadata cannot be read.
+  func originalArchivePath(forCachedFile url: URL) -> String? {
+    let dir = url.deletingLastPathComponent()
+    guard Self.isCacheDirectoryName(dir.lastPathComponent),
+          dir.deletingLastPathComponent().standardizedFileURL.path == root.standardizedFileURL.path,
+          let data = try? Data(contentsOf: dir.appending(component: "source.json")),
+          let meta = try? Self.decoder.decode(SourceMeta.self, from: data)
+    else { return nil }
+    return meta.originalPath
+  }
+
   /// Computes the cache directory URL without creating it.
   func cacheDirectoryURL(for archiveData: Data) -> URL {
     root.appending(component: Self.computeHash(archiveData), directoryHint: .isDirectory)
