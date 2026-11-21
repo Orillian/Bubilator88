@@ -133,6 +133,19 @@ struct DiskCacheManagerTests {
     #expect(meta.entries == ["a.d88"])
   }
 
+  @Test("originalArchivePath: maps a cached file back to its archive")
+  func originalArchivePathForCachedFile() throws {
+    let (cache, root) = makeTempCache()
+    defer { try? FileManager.default.removeItem(at: root) }
+
+    let dir = try cache.ensureCached(archiveURL: URL(filePath: "/games/ys.zip"),
+                                     archiveData: Data(repeating: 3, count: 50),
+                                     entries: [makeEntry("ys.d88")])
+    let cached = try #require(cache.cachedEntryURL(in: dir, entryName: "ys.d88"))
+    #expect(cache.originalArchivePath(forCachedFile: cached) == "/games/ys.zip")
+    #expect(cache.originalArchivePath(forCachedFile: URL(filePath: "/games/ys.d88")) == nil)
+  }
+
   // MARK: - resolvedData
 
   @Test("resolvedData: returns cache content when entry is cached")

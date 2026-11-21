@@ -62,6 +62,9 @@
         }
       }
     },
+    "%@" : {
+      "shouldTranslate" : false
+    },
     "AI Control Unavailable" : {
       "comment" : "Alert title: the AI tools server could not start (port in use, for one)",
       "localizations" : {
@@ -80,6 +83,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "AI ツールからの操作を許可"
+          }
+        }
+      }
+    },
+    "Bubilator88 is not ready." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bubilator88 の準備ができていません。"
           }
         }
       }
@@ -183,6 +196,16 @@
         }
       }
     },
+    "Disk Image" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ディスクイメージ"
+          }
+        }
+      }
+    },
     "Editors" : {
       "comment" : "AI tool picker section: editor-based tools",
       "localizations" : {
@@ -190,6 +213,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "エディタ"
+          }
+        }
+      }
+    },
+    "No disk is inserted." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ディスクが入っていません。"
+          }
+        }
+      }
+    },
+    "Open ${disk}" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "${disk} を開く"
+          }
+        }
+      }
+    },
+    "Open Disk" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ディスクを開く"
+          }
+        }
+      }
+    },
+    "Opens a disk in the drive or a recently used one." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ドライブにあるディスクか、最近使ったディスクを開きます。"
           }
         }
       }
@@ -205,6 +268,26 @@
         }
       }
     },
+    "Pause Emulation" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エミュレーションをポーズ"
+          }
+        }
+      }
+    },
+    "Pauses the emulator." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エミュレータをポーズします。"
+          }
+        }
+      }
+    },
     "Register With" : {
       "comment" : "Settings picker: which AI tool to show the registration for",
       "localizations" : {
@@ -216,6 +299,46 @@
         }
       }
     },
+    "Reset Machine" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マシンをリセット"
+          }
+        }
+      }
+    },
+    "Resets the emulated PC-8801." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PC-8801 をリセットします。"
+          }
+        }
+      }
+    },
+    "Resume Emulation" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エミュレーションを再開"
+          }
+        }
+      }
+    },
+    "Resumes the paused emulator." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ポーズ中のエミュレータを再開します。"
+          }
+        }
+      }
+    },
     "Run it in Terminal, then start a new session." : {
       "comment" : "AI tool registration: how to use a command",
       "localizations" : {
@@ -223,6 +346,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ターミナルで実行し、新しいセッションを始めます。"
+          }
+        }
+      }
+    },
+    "Saves the current state to the quick save slot." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在の状態をクイックセーブスロットに保存します。"
           }
         }
       }
@@ -245,6 +378,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "AI ツールの MCP 設定に貼り付けるか、AI に渡して登録を頼みます。"
+          }
+        }
+      }
+    },
+    "The disk could not be opened." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ディスクを開けませんでした。"
+          }
+        }
+      }
+    },
+    "The disk was not found." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ディスクが見つかりません。"
+          }
+        }
+      }
+    },
+    "The screen is not available." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画面を取得できません。"
+          }
+        }
+      }
+    },
+    "This can't be done right now." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在この操作はできません。"
           }
         }
       }

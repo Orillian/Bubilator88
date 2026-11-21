@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import UniformTypeIdentifiers
 import Bubilator88Core
@@ -141,6 +142,10 @@ struct ContentView: View {
       viewModel.renderScreen()
       viewModel.start()
       if let resumeToast { viewModel.showToast(resumeToast) }
+      // Only now may Siri and Shortcuts act on the machine: an intent that
+      // arrives earlier would save or mount over a machine with no ROMs.
+      AppIntentsHost.viewModel = viewModel
+      Bubilator88Shortcuts.updateAppShortcutParameters()
       // A `.b88script` double-clicked to launch the app is held until
       // here, so it plays only after ROMs + run loop are live.
       viewModel.consumePendingScript()
@@ -310,10 +315,32 @@ struct ContentView: View {
               mode: viewModel.isFullScreen ? Settings.shared.fullscreenScaling : .fit)
   }
 
+  /// Tells Siri which disk the game on screen comes from. A separate empty
+  /// view so that `.id` can rebuild the activity on every disk change
+  /// without rebuilding the Metal view.
+  private var screenActivity: some View {
+    let path = viewModel.mountedDiskPath(drive: 0)
+    return Color.clear
+      .allowsHitTesting(false)
+      .accessibilityHidden(true)
+      .userActivity("com.bubio.Bubilator88.playing", isActive: path != nil) { activity in
+        activity.title = viewModel.currentGameName
+        activity.appEntityIdentifier = path.map {
+          EntityIdentifier(for: DiskImageEntity.self, identifier: $0)
+        }
+      }
+      .id(path)
+      // The disks Siri can name in "Open … in Bubilator88" follow what is
+      // mounted and the recent list, which a mount also updates.
+      .onChange(of: viewModel.drive0Info?.id) { Bubilator88Shortcuts.updateAppShortcutParameters() }
+      .onChange(of: viewModel.drive1Info?.id) { Bubilator88Shortcuts.updateAppShortcutParameters() }
+  }
+
   @ViewBuilder
   private var screenView: some View {
     ZStack {
       MetalScreenViewWrapper(viewModel: viewModel)
+      screenActivity
       if let session = viewModel.dissolveSession {
         GeometryReader { geo in
           // Match Metal view's aspect-fit (and integer scaling in
